@@ -42,6 +42,7 @@ public:
 
   float keyboard_zoom_speed;
 
+  bool  queue_enabled;
   bool  hotkeys_enabled;
   bool  hotkeys_extended;
   bool  use_scopely_hotkeys;

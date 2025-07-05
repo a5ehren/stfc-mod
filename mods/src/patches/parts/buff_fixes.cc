@@ -139,7 +139,7 @@ void InstallBuffFixHooks()
   } else {
     auto ptr = fleethelper.GetMethod("ResolveOfficerAbilityBuffs");
     if (ptr == nullptr) {
-      ErrorMsg::MissingMethod("FleetService", "IsBuffConditionMet");
+      ErrorMsg::MissingMethod("FleetService", "ResolveOfficerAbilityBuffs");
     } else {
       SPUD_STATIC_DETOUR(ptr, FleetService_ResolveOfficerAbilityBuffs_Hook);
     }

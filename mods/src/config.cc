@@ -341,6 +341,7 @@ void Config::Load()
     write_config = false;
   }
 
+  this->queue_enabled       = get_config_or_default(config, parsed, "control", "queue_enabled", true);
   this->hotkeys_enabled     = get_config_or_default(config, parsed, "control", "hotkeys_enabled", true);
   this->hotkeys_extended    = get_config_or_default(config, parsed, "control", "hotkeys_extended", true);
   this->use_scopely_hotkeys = get_config_or_default(config, parsed, "control", "use_scopely_hotkeys", false);
@@ -498,7 +499,7 @@ void Config::Load()
 
   parse_config_shortcut(config, parsed, "action_primary", GameFunction::ActionPrimary, "SPACE");
   parse_config_shortcut(config, parsed, "action_secondary", GameFunction::ActionSecondary, "R");
-  parse_config_shortcut(config, parsed, "action_queue", GameFunction::ActionQueue, "V");
+  parse_config_shortcut(config, parsed, "action_queue", GameFunction::ActionQueue, "ALT-Q");
   parse_config_shortcut(config, parsed, "action_view", GameFunction::ActionView, "V");
   parse_config_shortcut(config, parsed, "action_recall", GameFunction::ActionRecall, "R");
   parse_config_shortcut(config, parsed, "action_recall_cancel", GameFunction::ActionRecallCancel, "SPACE");
@@ -564,12 +565,13 @@ void Config::Load()
     parse_config_shortcut(config, parsed, "set_zoom_preset5", GameFunction::SetZoomPreset5, "SHIFT-F5");
     parse_config_shortcut(config, parsed, "set_zoom_default", GameFunction::SetZoomDefault, "CTRL-=");
     parse_config_shortcut(config, parsed, "toggle_preview_locate", GameFunction::TogglePreviewLocate, "CTRL-L");
-    parse_config_shortcut(config, parsed, "toggle_preview_locate", GameFunction::TogglePreviewRecall, "CTRL-R");
+    parse_config_shortcut(config, parsed, "toggle_preview_recall", GameFunction::TogglePreviewRecall, "CTRL-R");
     parse_config_shortcut(config, parsed, "toggle_cargo_default", GameFunction::ToggleCargoDefault, "ALT-1");
     parse_config_shortcut(config, parsed, "toggle_cargo_player", GameFunction::ToggleCargoPlayer, "ALT-2");
     parse_config_shortcut(config, parsed, "toggle_cargo_station", GameFunction::ToggleCargoStation, "ALT-3");
     parse_config_shortcut(config, parsed, "toggle_cargo_hostile", GameFunction::ToggleCargoHostile, "ALT-4");
     parse_config_shortcut(config, parsed, "toggle_cargo_armada", GameFunction::ToggleCargoArmada, "ALT-5");
+    parse_config_shortcut(config, parsed, "toggle_queue", GameFunction::ToggleQueue, "CTRL-Q");
   }
 
   if (!std::filesystem::exists(File::MakePath(File::Config()))) {

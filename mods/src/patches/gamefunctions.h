@@ -73,6 +73,7 @@ enum GameFunction {
   SetZoomDefault,
   DisableHotKeys,
   EnableHotKeys,
+  ToggleQueue,
   TogglePreviewLocate,
   TogglePreviewRecall,
   ToggleCargoDefault,

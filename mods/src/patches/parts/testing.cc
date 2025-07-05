@@ -28,9 +28,9 @@
 class AppConfig
 {
 public:
-  __declspec(property(get = __get_PlatformSettingsUrl,
-                      put = __set_PlatformSettingsUrl)) Il2CppString* PlatformSettingsUrl;
-  __declspec(property(get = __get_PlatformApiKey, put = __set_PlatformApiKey)) Il2CppString* PlatformApiKey;
+  __declspec(property(get = __get_PlatformSettingsUrl, put = __set_PlatformSettingsUrl))
+  Il2CppString*                                                                                  PlatformSettingsUrl;
+  __declspec(property(get = __get_PlatformApiKey, put = __set_PlatformApiKey)) Il2CppString*     PlatformApiKey;
   __declspec(property(get = __get_AssetUrlOverride, put = __set_AssetUrlOverride)) Il2CppString* AssetUrlOverride;
 
 private:
@@ -127,6 +127,15 @@ void SetActive_hook(auto original, void* _this, bool active)
   return original(_this, active);
 }
 
+bool IsQueueEnabled(auto original, void* _this)
+{
+  if (Config::Get().queue_enabled) {
+    return original(_this);
+  }
+
+  return false;
+}
+
 void InstallTestPatches()
 {
   auto model = il2cpp_get_class_helper("Assembly-CSharp", "Digit.Client.Core", "Model");
@@ -146,14 +155,25 @@ void InstallTestPatches()
   if (!battle_target_data.HasClass()) {
     ErrorMsg::MissingHelper("Models", "BattleTargetData");
   } else {
-    battle_target_data = battle_target_data;
-
     static auto SetActive =
         il2cpp_resolve_icall_typed<void(void*, bool)>("UnityEngine.GameObject::SetActive(System.Boolean)");
     if (SetActive == nullptr) {
       ErrorMsg::MissingStaticMethod("GameObject", "SetActive");
     } else {
       SPUD_STATIC_DETOUR(SetActive, SetActive_hook);
+    }
+  }
+
+  auto queue_manager = il2cpp_get_class_helper("Assembly-CSharp", "Prime.ActionQueue", "ActionQueueManager");
+  if (!queue_manager.HasClass()) {
+    ErrorMsg::MissingHelper("ActionQueue", "ActionQueueManager");
+  } else {
+
+    auto is_queue_unlocked = queue_manager.GetMethod("IsQueueUnlocked");
+    if (is_queue_unlocked == nullptr) {
+      ErrorMsg::MissingStaticMethod("GameObject", "IsQueueUnlocked");
+    } else {
+      SPUD_STATIC_DETOUR(is_queue_unlocked, IsQueueEnabled);
     }
   }
 }

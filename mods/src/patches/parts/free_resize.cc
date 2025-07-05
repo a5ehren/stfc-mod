@@ -106,7 +106,7 @@ struct ResolutionArray {
 
 void AspectRatioConstraintHandler_Update(auto original, void* _this)
 {
-  static auto set_title       = false;
+  static auto set_title       = true;
   static auto get_fullscreen  = il2cpp_resolve_icall_typed<bool()>("UnityEngine.Screen::get_fullScreen()");
   static auto get_height      = il2cpp_resolve_icall_typed<int()>("UnityEngine.Screen::get_height()");
   static auto get_width       = il2cpp_resolve_icall_typed<int()>("UnityEngine.Screen::get_width()");
@@ -137,10 +137,14 @@ void AspectRatioConstraintHandler_Update(auto original, void* _this)
   }
 
 #if _WIN32
-  HWND hwnd = Config::WindowHandle();
-  auto title = File::Title();
-  if (hwnd != nullptr && !set_title && !title.empty()) {
-    set_title = SetWindowTextW(hwnd, title.c_str());
+  if (set_title) {
+    HWND hwnd  = Config::WindowHandle();
+    auto title = File::Title();
+    if (hwnd != nullptr && !title.empty()) {
+      if (SetWindowTextW(hwnd, title.c_str())) {
+        set_title = false;
+      }
+    }
   }
 #endif
 

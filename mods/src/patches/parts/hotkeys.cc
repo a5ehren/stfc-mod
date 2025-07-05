@@ -188,6 +188,11 @@ void ScreenManager_Update_Hook(auto original, ScreenManager* _this)
 
   if (!is_in_chat) {
     if (!Key::IsInputFocused()) {
+      if ((MapKey::IsDown(GameFunction::ToggleQueue))) {
+        config->queue_enabled = !config->queue_enabled;
+        return;
+      }
+
       if ((MapKey::IsDown(GameFunction::ShowChat) || MapKey::IsDown(GameFunction::ShowChatSide1)
            || MapKey::IsDown(GameFunction::ShowChatSide2))) {
         if (auto chat_manager = ChatManager::Instance(); chat_manager) {
@@ -204,6 +209,20 @@ void ScreenManager_Update_Hook(auto original, ScreenManager* _this)
           } else {
             chat_manager->OpenChannel(ChatChannelCategory::Alliance, ChatViewMode::Fullscreen);
           }
+        }
+      }
+
+      if (MapKey::IsDown(GameFunction::MoveLeft)) {
+        auto const result = MoveOfficerCanvas(true);
+        if (result) {
+          return;
+        }
+      }
+
+      if (MapKey::IsDown(GameFunction::MoveRight)) {
+        auto const result = MoveOfficerCanvas(false);
+        if (result) {
+          return;
         }
       }
 
