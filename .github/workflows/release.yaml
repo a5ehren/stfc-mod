@@ -33,7 +33,7 @@ jobs:
           prerelease: ${{ steps.check-prerelease.outputs.prerelease == 'true' }}
 
       - name: Download artifact
-        uses: dawidd6/action-download-artifact@v6
+        uses: dawidd6/action-download-artifact@v11
         with:
           commit: ${{env.GITHUB_SHA}}
           workflow: ci.yaml
