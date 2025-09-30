@@ -23,13 +23,13 @@ jobs:
         run: mkdir -p build/.xmake
 
       - name: Cache xmake packages
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: ~/.xmake/packages
           key: ${{ runner.os }}-xmake-packages-${{ hashFiles('xmake.lua') }}
 
       - name: Cache xmake build
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: build/.xmake
           key: ${{ runner.os }}-xmake-build-${{ hashFiles('xmake.lua') }}
@@ -72,13 +72,13 @@ jobs:
         run: mkdir -p build/.xmake
 
       - name: Cache xmake packages
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: ~/.xmake/packages
           key: ${{ runner.os }}-xmake-packages-${{ hashFiles('xmake.lua') }}
 
       - name: Cache xmake build
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: build/.xmake
           key: ${{ runner.os }}-xmake-build-${{ hashFiles('xmake.lua') }}
