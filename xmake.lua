@@ -10,7 +10,6 @@ add_requires("toml++")
 add_requires("nlohmann_json")
 add_requires("cpr")
 add_requireconfs("cpr.libcurl", { configs = { zlib = true } })
-add_requires("boost", { configs = { url = true } })
 add_requires("protobuf 32.1")
 
 if is_plat("windows") then
@@ -20,10 +19,9 @@ if is_plat("windows") then
 end
 
 if is_plat("macosx") then
-    add_requires("7z")
     add_requires("inifile-cpp")
     add_requires("librsync")
-    add_requires("lzma")
+    add_requires("PLzmaSDK")
     includes("macos-dylib")
     includes("macos-loader")
     includes("macos-launcher")

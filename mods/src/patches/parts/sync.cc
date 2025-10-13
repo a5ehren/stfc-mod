@@ -27,7 +27,6 @@
 
 #include <EASTL/algorithm.h>
 #include <EASTL/bonus/ring_buffer.h>
-#include <boost/url.hpp>
 #include <cpr/cpr.h>
 #include <nlohmann/json.hpp>
 
@@ -40,6 +39,7 @@
 #include <queue>
 #include <semaphore>
 #include <string>
+#include <string_view>
 
 #ifndef STR_FORMAT
 #if __cpp_lib_format
@@ -95,6 +95,55 @@ static std::string newUUID()
 #endif
   return s;
 }
+
+// Simple URL manipulation class to replace boost::url
+class SimpleUrl
+{
+public:
+  explicit SimpleUrl(std::string_view urlString) : url(urlString)
+  {
+    // Find where the path starts (after scheme://host:port)
+    // Format: scheme://host[:port]/path[?query][#fragment]
+    
+    size_t schemeEnd = url.find("://");
+    if (schemeEnd == std::string::npos) {
+      pathStart = 0;
+      return;
+    }
+    
+    // Skip past "://"
+    size_t hostStart = schemeEnd + 3;
+    
+    // Find the start of the path (first '/' after host)
+    pathStart = url.find('/', hostStart);
+    if (pathStart == std::string::npos) {
+      pathStart = url.length();
+    }
+  }
+  
+  void setPath(std::string_view newPath)
+  {
+    // Remove existing path and everything after it
+    url.erase(pathStart);
+    
+    // Add new path (ensure it starts with '/')
+    if (!newPath.empty() && newPath[0] != '/') {
+      url += '/';
+    }
+    url += newPath;
+    
+    // pathStart remains valid since we erase from that position and append
+  }
+  
+  const char* data() const
+  {
+    return url.c_str();
+  }
+  
+private:
+  std::string url;
+  size_t pathStart;
+};
 
 static void sync_log_error(const std::string& type, const std::string& target, const std::string& text)
 {
@@ -317,15 +366,15 @@ static std::string get_scopely_data(const std::string& path, const std::string& 
     }
   });
 
-  boost::url url(headers::gameServerUrl);
-  url.set_path(path);
+  SimpleUrl url(headers::gameServerUrl);
+  url.setPath(path);
 
   const auto        httpClient = get_curl_client_scopely();
   static std::mutex client_mutex;
 
   {
     std::lock_guard lk(client_mutex);
-    httpClient->SetUrl(url.buffer().data());
+    httpClient->SetUrl(url.data());
 
     auto& headers = httpClient->GetHeader();
     headers.insert_or_assign("X-TRANSACTION-ID", newUUID());
