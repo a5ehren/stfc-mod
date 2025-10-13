@@ -79,7 +79,7 @@ Installation of the Community Mod is a manual process for Windows (or Wine).
 
 __NOTE:__ The `Star Trek Fleet Command` game itself is located at:
 
-- `~/Library/Application Support/Star Trek Fleet Command/Games/Star Trek Fleet Command/STFC/default/game`
+- `~/Library/Application Support/Star Trek Fleet Command/Games/Star Trek Fleet Command/Star Trek Fleet Command/default/game`
 
 You should only need to access this folder if you need to view the `community_patch.log` file while troubleshooting a problem.
 
