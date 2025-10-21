@@ -33,10 +33,9 @@
 #include "patches/key.h"
 #include "patches/mapkey.h"
 
-#include <EASTL/vector.h>
-
 #include <iostream>
 #include <span>
+#include <vector>
 
 #ifdef _WIN32
 #include <Windows.h>

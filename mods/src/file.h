@@ -5,7 +5,6 @@
 #include "version.h"
 #include <prime\Toast.h>
 
-#include <EASTL/tuple.h>
 #include <spdlog/spdlog.h>
 
 #include <algorithm>
@@ -14,6 +13,7 @@
 #include <iostream>
 #include <string>
 #include <string_view>
+#include <tuple>
 
 #if !_WIN32
 #include "folder_manager.h"

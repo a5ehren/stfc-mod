@@ -6,7 +6,6 @@
 #include "version.h"
 #include <prime/Toast.h>
 
-#include <EASTL/tuple.h>
 #include <spdlog/spdlog.h>
 
 #include <algorithm>
@@ -15,8 +14,9 @@
 #include <ranges>
 #include <string>
 #include <string_view>
+#include <tuple>
 
-static const eastl::tuple<const char*, int> bannerTypes[] = {
+static const std::tuple<const char*, int> bannerTypes[] = {
     {"Standard", ToastState::Standard},
     {"FactionWarning", ToastState::FactionWarning},
     {"FactionLevelUp", ToastState::FactionLevelUp},

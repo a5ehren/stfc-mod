@@ -8,9 +8,9 @@
 #include <il2cpp-object-internals.h>
 #include <utils/Il2CppHashMap.h>
 
-#include <EASTL/span.h>
-#include <EASTL/unordered_map.h>
-#include <EASTL/vector.h>
+#include <span>
+#include <unordered_map>
+#include <vector>
 
 #if !_WIN32
 #include <syslog.h>
@@ -351,7 +351,7 @@ template <typename T> inline T* il2cpp_get_array_element(Il2CppArray* array, siz
   return (T*)n->vector[index];
 }
 
-extern eastl::unordered_map<Il2CppClass*, eastl::vector<uintptr_t>> tracked_objects;
+extern std::unordered_map<Il2CppClass*, std::vector<uintptr_t>> tracked_objects;
 
 template <typename T> class ObjectFinder
 {
@@ -366,7 +366,7 @@ public:
     return reinterpret_cast<T*>(objects.back());
   }
 
-  static eastl::span<T*> GetAll()
+  static std::span<T*> GetAll()
   {
     auto& objects = tracked_objects[T::get_class_helper().get_cls()];
     return {reinterpret_cast<T**>(objects.data()), reinterpret_cast<T**>(objects.data()) + objects.size()};

@@ -14,17 +14,17 @@
 #include "prime/PreScanTargetWidget.h"
 #include "prime/StarNodeObjectViewerWidget.h"
 
-#include <EASTL/unordered_map.h>
-#include <EASTL/unordered_set.h>
-#include <EASTL/vector.h>
 #include <spdlog/spdlog.h>
 #include <spud/detour.h>
 #include <spud/signature.h>
 
 #include <mutex>
+#include <unordered_map>
+#include <unordered_set>
+#include <vector>
 
-std::mutex                                                   tracked_objects_mutex;
-eastl::unordered_map<Il2CppClass*, eastl::vector<uintptr_t>> tracked_objects;
+std::mutex                                               tracked_objects_mutex;
+std::unordered_map<Il2CppClass*, std::vector<uintptr_t>> tracked_objects;
 
 void add_to_tracking_recursive(Il2CppClass* klass, void* _this)
 {
@@ -42,7 +42,7 @@ void remove_from_tracking_all(void* _this)
 {
 #define GET_CLASS(obj) ((Il2CppClass*)(((size_t)obj) & ~(size_t)1))
   for (auto& [klass, tracked_object_vector] : tracked_objects) {
-    tracked_object_vector.erase_first(uintptr_t(_this));
+    tracked_object_vector.erase(std::find(tracked_object_vector.begin(), tracked_object_vector.end(), uintptr_t(_this)));
   }
 #undef GET_CLASS
 }
@@ -59,7 +59,7 @@ void remove_from_tracking_recursive(Il2CppClass* klass, void* _this)
   }
 
   auto& tracked_object_vector = tracked_objects[GET_CLASS(klass->parent)];
-  tracked_object_vector.erase_first(uintptr_t(_this));
+  tracked_object_vector.erase(std::find(tracked_object_vector.begin(), tracked_object_vector.end(), uintptr_t(_this)));
   return remove_from_tracking_recursive(GET_CLASS(klass->parent), _this);
 #undef GET_CLASS
 }
@@ -123,8 +123,8 @@ void calc_liveness_hook(auto original, void* state)
   original(state);
 
   std::scoped_lock                                    lk{tracked_objects_mutex};
-  eastl::vector<eastl::pair<Il2CppClass*, uintptr_t>> objects_to_free;
-  eastl::unordered_set<uintptr_t>                     objects_seen;
+  std::vector<std::pair<Il2CppClass*, uintptr_t>> objects_to_free;
+  std::unordered_set<uintptr_t>                     objects_seen;
 #define IS_MARKED(obj) (((size_t)(obj)->klass) & (size_t)1)
   for (auto& [klass, objects] : tracked_objects) {
     for (auto object : objects) {
@@ -147,8 +147,8 @@ void calc_liveness_hook(auto original, void* state)
   tracked_objects = tracked_objects;
 }
 
-static eastl::unordered_set<void*> seen_ctor;
-static eastl::unordered_set<void*> seen_destroy;
+static std::unordered_set<void*> seen_ctor;
+static std::unordered_set<void*> seen_destroy;
 
 template <typename T> void TrackObject()
 {

@@ -1,10 +1,11 @@
 set_project("stfc-community-patch")
 
-set_languages("c++23")
+-- as of oct 2025 appleClang 26 and msvc 2022 do not have complete enough c++23 support
+-- to declare it as the default language and imply that you can use all the features
+set_languages("c++20")
 
 set_runtimes("MT") -- Set the default build to multi-threaded static
 
-add_requires("eastl")
 add_requires("spdlog")
 add_requires("toml++")
 add_requires("nlohmann_json")

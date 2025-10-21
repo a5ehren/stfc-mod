@@ -2,6 +2,7 @@
 #include "errormsg.h"
 #include "file.h"
 #include "str_utils.h"
+#include "ring_buffer.h"
 
 #include <il2cpp-api-types.h>
 #include <Digit.PrimeServer.Models.pb.h>
@@ -25,12 +26,12 @@
 #include <uuid/uuid.h>
 #endif
 
-#include <EASTL/algorithm.h>
-#include <EASTL/bonus/ring_buffer.h>
 #include <cpr/cpr.h>
 #include <curl/curl.h>
 #include <nlohmann/json.hpp>
 
+#include <algorithm>
+#include <array>
 #include <atomic>
 #include <chrono>
 #include <condition_variable>
@@ -1363,7 +1364,7 @@ void process_battle_headers(const nlohmann::json& section)
     std::lock_guard lk(previously_sent_battlelogs_mtx);
 
     for (const auto id : battle_ids | std::views::reverse) {
-      if (eastl::find(previously_sent_battlelogs.begin(), previously_sent_battlelogs.end(), id)
+      if (std::find(previously_sent_battlelogs.begin(), previously_sent_battlelogs.end(), id)
           == previously_sent_battlelogs.end()) {
         previously_sent_battlelogs.push_back(id);
         to_enqueue.push_back(id);
