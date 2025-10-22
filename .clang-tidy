@@ -1,0 +1,79 @@
+---
+# Clang-Tidy configuration for gaming projects
+# Focuses on: performance, cross-platform compatibility, readability, and bug prevention
+# while avoiding overly restrictive rules that hinder game development
+
+Checks: >-
+  -*,
+  bugprone-*,
+  -bugprone-easily-swappable-parameters,
+  -bugprone-exception-escape,
+  -bugprone-narrowing-conversions,
+  clang-analyzer-*,
+  -clang-analyzer-optin.performance.Padding,
+  misc-*,
+  -misc-const-correctness,
+  -misc-include-cleaner,
+  -misc-no-recursion,
+  -misc-non-private-member-variables-in-classes,
+  -misc-use-anonymous-namespace,
+  -misc-use-internal-linkage,
+  modernize-*,
+  -modernize-avoid-c-arrays,
+  -modernize-return-braced-init-list,
+  -modernize-use-nodiscard,
+  -modernize-use-trailing-return-type,
+  performance-*,
+  portability-*
+
+CheckOptions:
+  # Performance settings
+  - key: performance-move-const-arg.CheckTriviallyCopyableMove
+    value: 'false'
+  - key: performance-unnecessary-value-param.AllowedTypes
+    value: 'std::function;std::shared_ptr;std::unique_ptr'
+  
+  # Readability settings
+  - key: readability-function-size.LineThreshold
+    value: '150'
+  - key: readability-function-size.StatementThreshold
+    value: '100'
+  - key: readability-function-size.BranchThreshold
+    value: '20'
+  - key: readability-function-size.ParameterThreshold
+    value: '8'
+  - key: readability-function-size.NestingThreshold
+    value: '5'
+  - key: readability-simplify-boolean-expr.ChainedConditionalReturn
+    value: 'true'
+  - key: readability-simplify-boolean-expr.ChainedConditionalAssignment
+    value: 'true'
+  
+  # Modernization settings
+  - key: modernize-loop-convert.MaxCopySize
+    value: '32'
+  - key: modernize-loop-convert.MinConfidence
+    value: 'reasonable'
+  - key: modernize-use-auto.MinTypeNameLength
+    value: '8'
+  - key: modernize-use-auto.RemoveStars
+    value: 'true'
+  
+  # Core Guidelines settings
+  - key: cppcoreguidelines-explicit-virtual-functions.IgnoreDestructors
+    value: 'true'
+  
+  # Miscellaneous
+  - key: misc-non-copyable-objects.CheckCoreFunctions
+    value: 'true'
+  - key: misc-throw-by-value-catch-by-reference.CheckThrowTemporaries
+    value: 'true'
+
+# Use the project's .clang-format file for formatting fixes
+FormatStyle: file
+
+# Header filter - adjust to your project structure
+HeaderFilterRegex: '.*/mods/.*\.(h|hpp|hxx)$'
+
+# Warnings as errors (uncomment to be more strict)
+# WarningsAsErrors: '*'

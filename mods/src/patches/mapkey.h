@@ -14,10 +14,10 @@ public:
   MapKey();
 
   static MapKey Parse(std::string_view key);
-  static void   AddMappedKey(GameFunction gameFunction, MapKey mappedKey);
+  static void   AddMappedKey(GameFunction gameFunction, const MapKey& mappedKey);
   static bool   IsPressed(GameFunction gameFunction);
   static bool   IsDown(GameFunction gameFunction);
-  static bool   HasCorrectModifiers(MapKey mapKey);
+  static bool   HasCorrectModifiers(const MapKey& mapKey);
 
   static std::string GetShortcuts(GameFunction gameFunction);
 

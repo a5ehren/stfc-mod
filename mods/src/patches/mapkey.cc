@@ -70,7 +70,7 @@ std::string MapKey::GetShortcuts(GameFunction gameFunction)
   return shortcuts;
 }
 
-void MapKey::AddMappedKey(GameFunction gameFunction, MapKey mappedKey)
+void MapKey::AddMappedKey(GameFunction gameFunction, const MapKey& mappedKey)
 {
   MapKey::mappedKeys[gameFunction].emplace_back(mappedKey);
 }
@@ -107,7 +107,7 @@ bool MapKey::IsDown(GameFunction gameFunction)
   return false;
 }
 
-bool MapKey::HasCorrectModifiers(MapKey mapKey)
+bool MapKey::HasCorrectModifiers(const MapKey& mapKey)
 {
   auto        result  = false;
   std::string section = "non set";
