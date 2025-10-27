@@ -267,7 +267,8 @@ private func requestGameBundleAccessOnMainThread(
     App Management permission for this app. After allowing this, you must quit the launcher and
     start it again for the change to take effect.
 
-    Please select the Star Trek Fleet Command.app below:
+    The default selection below should not need to be changed unless we did not detect
+    the game path correctly. Press "Authorize and Continue" to grant access to the game bundle.
     """
     openPanel.prompt = "Authorize and Continue"
     openPanel.canChooseFiles = false
