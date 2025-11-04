@@ -13,7 +13,6 @@ do
     
     if is_mode("releasedbg") then
         add_defines("_MODDBG")  -- enable your debug flag
-        add_cxflags("/Zi")      -- optional: include debug info in release
     end
     
     if is_plat("windows") then
