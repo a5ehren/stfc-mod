@@ -30,6 +30,14 @@ public:
     ZoomCameraAtWorldPoint(this);
   }
 
+  void AnimateToZoomDistance(float distance)
+  {
+    static auto fn = get_class_helper().GetMethod<void(NavigationZoom*, float)>("AnimateToZoomDistance");
+    if (fn) {
+      fn(this, distance);
+    }
+  }
+
   __declspec(property(get = __get_Distance, put = __set_Distance)) float Distance;
 
   __declspec(property(get = __get__depth, put = __set_depth)) NodeDepth _depth;

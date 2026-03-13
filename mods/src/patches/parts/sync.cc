@@ -2068,7 +2068,8 @@ void GameServerModelRegistry_ProcessResultInternal(auto original, void* _this, v
   return original(_this, parsing_context, service_response);
 }
 
-void GameServerModelRegistry_HandleBinaryObjects(auto original, void* _this, ServiceResponse* service_response)
+void GameServerModelRegistry_ParseBinaryObjectsHelper(auto original, void* _this, void* parsing_context,
+                                                       ServiceResponse* service_response)
 {
   auto *const entity_groups = service_response->EntityGroups;
   for (int i = 0; i < entity_groups->Count; ++i) {
@@ -2076,7 +2077,7 @@ void GameServerModelRegistry_HandleBinaryObjects(auto original, void* _this, Ser
     HandleEntityGroup(entity_group);
   }
 
-  return original(_this, service_response);
+  return original(_this, parsing_context, service_response);
 }
 
 void PrimeApp_InitPrimeServer(auto original, void* _this, Il2CppString* gameServerUrl, Il2CppString* gatewayServerUrl,
@@ -2114,8 +2115,8 @@ void InstallSyncPatches()
     SAFE_STATIC_DETOUR(game_server_model_registry, "GameServerModelRegistry", "ProcessResultInternal", 2,
                         GameServerModelRegistry_ProcessResultInternal);
 #endif
-    SAFE_STATIC_DETOUR(game_server_model_registry, "GameServerModelRegistry", "HandleBinaryObjects", 1,
-                        GameServerModelRegistry_HandleBinaryObjects);
+    SAFE_STATIC_DETOUR(game_server_model_registry, "GameServerModelRegistry", "ParseBinaryObjectsHelper", 2,
+                        GameServerModelRegistry_ParseBinaryObjectsHelper);
   }
 
   if (auto platform_model_registry =
@@ -2208,10 +2209,10 @@ void InstallSyncPatches()
                         DataContainer_ParseBinaryObject);
     SAFE_STATIC_DETOUR(slot_data_container, "SlotDataContainer", "ParseEntitySlotsData", 1,
                         DataContainer_ParseEntitySlotsData);
-    SAFE_STATIC_DETOUR(slot_data_container, "SlotDataContainer", "ParseSlotUpdatedJson", 2,
-                        DataContainer_ParseRtcPayload);
-    SAFE_STATIC_DETOUR(slot_data_container, "SlotDataContainer", "ParseSlotRemovedJson", 2,
-                        DataContainer_ParseRtcPayload);
+    // v48084: ParseSlotUpdatedJson/ParseSlotRemovedJson renamed to UpdateSlotData/RemoveSlotData
+    // with new signature (EntitySlot, String channelId) — hook needs rewrite to match.
+    // SAFE_STATIC_DETOUR(slot_data_container, "SlotDataContainer", "UpdateSlotData", 2, ...);
+    // SAFE_STATIC_DETOUR(slot_data_container, "SlotDataContainer", "RemoveSlotData", 2, ...);
   }
 
   if (auto prime_app = il2cpp_get_class_helper("Assembly-CSharp", "Digit.Client.Core", "PrimeApp");
