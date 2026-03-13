@@ -7,6 +7,8 @@
 #include <spdlog/spdlog.h>
 #include <spud/detour.h>
 
+#include "patches/safe_detour.h"
+
 int64_t TransitionManager_Awake(auto original, TransitionManager* a1)
 {
   spdlog::debug("Adjusting screen transitions to {}", Config::Get().transition_time);
@@ -27,11 +29,6 @@ void InstallImproveResponsivenessHooks()
   if (!transition_manager_helper.isValidHelper()) {
     ErrorMsg::MissingHelper("LoadingScreen", "TransitionManager");
   } else {
-    auto awake = transition_manager_helper.GetMethod("Awake");
-    if (awake == nullptr) {
-      ErrorMsg::MissingMethod("TransitionManager", "Awake");
-    } else {
-      SPUD_STATIC_DETOUR(awake, TransitionManager_Awake);
-    }
+    SAFE_STATIC_DETOUR(transition_manager_helper, "TransitionManager", "Awake", 0, TransitionManager_Awake);
   }
 }

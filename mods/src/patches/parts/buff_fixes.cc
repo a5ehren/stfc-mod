@@ -8,6 +8,8 @@
 
 #include <spud/detour.h>
 
+#include "patches/safe_detour.h"
+
 static bool BuffService_IsBuffConditionMet(auto original, void* _this, BuffCondition currentCondition,
                                            IBuffComparer *buffComparer, IBuffData *buffToCompare,
                                            bool excludeFactionBuffs, bool isAllianceLoyalty)
@@ -31,11 +33,7 @@ void InstallBuffFixHooks()
     if (!buffHelper.isValidHelper()) {
       ErrorMsg::MissingHelper("Services", "BuffService");
     } else {
-      if (const auto ptr = buffHelper.GetMethod("IsBuffConditionMet"); ptr == nullptr) {
-        ErrorMsg::MissingMethod("BuffService", "IsBuffConditionMet");
-      } else {
-        SPUD_STATIC_DETOUR(ptr, BuffService_IsBuffConditionMet);
-      }
+      SAFE_STATIC_DETOUR(buffHelper, "BuffService", "IsBuffConditionMet", 5, BuffService_IsBuffConditionMet);
     }
   }
 }

@@ -12,6 +12,8 @@
 
 #include <spud/detour.h>
 
+#include "patches/safe_detour.h"
+
 #if _WIN32
 #include <Windows.h>
 #endif
@@ -51,12 +53,7 @@ void InstallMiscPatches()
   if (!h.isValidHelper()) {
     ErrorMsg::MissingHelper("Digit.Prime.Inventories", "InventoryForPopup");
   } else {
-    auto ptr = h.GetMethod("set_MaxItemsToUse");
-    if (!ptr) {
-      ErrorMsg::MissingMethod("InventoryForPopup", "set_MaxItemsToUse");
-    } else {
-      SPUD_STATIC_DETOUR(ptr, InventoryForPopup_set_MaxItemsToUse);
-    }
+    SAFE_STATIC_DETOUR(h, "InventoryForPopup", "set_MaxItemsToUse", 1, InventoryForPopup_set_MaxItemsToUse);
   }
 #endif
 
@@ -64,11 +61,7 @@ void InstallMiscPatches()
   if (!bundle_data_widget.isValidHelper()) {
     ErrorMsg::MissingHelper("Digit.Prime.Shop", "BundleDataWidget");
   } else {
-    auto ptr = bundle_data_widget.GetMethod("OnActionButtonPressedCallback");
-    if (!ptr) {
-      ErrorMsg::MissingMethod("BundleDataWidget", "OnActionButtonPressedCallback");
-    } else
-      SPUD_STATIC_DETOUR(ptr, BundleDataWidget_OnActionButtonPressedCallback);
+    SAFE_STATIC_DETOUR(bundle_data_widget, "BundleDataWidget", "OnActionButtonPressedCallback", 0, BundleDataWidget_OnActionButtonPressedCallback);
   }
 }
 
@@ -277,24 +270,14 @@ void InstallTempCrashFixes()
   if (!BuffService_helper.isValidHelper()) {
     ErrorMsg::MissingHelper("Services", "BuffService");
   } else {
-    auto ptr_extract_buffs_of_type = BuffService_helper.GetMethod("ExtractBuffsOfType");
-    if (ptr_extract_buffs_of_type == nullptr) {
-      ErrorMsg::MissingMethod("BuffService", "ExtractBuffsOfType");
-    } else {
-      SPUD_STATIC_DETOUR(ptr_extract_buffs_of_type, ExtractBuffsOfType_Hook);
-    }
+    SAFE_STATIC_DETOUR(BuffService_helper, "BuffService", "ExtractBuffsOfType", 2, ExtractBuffsOfType_Hook);
   }
 
   auto shop_scene_manager = il2cpp_get_class_helper("Assembly-CSharp", "Digit.Prime.Shop", "ShopSceneManager");
   if (!shop_scene_manager.isValidHelper()) {
     ErrorMsg::MissingHelper("Shop", "ShopSceneManager");
   } else {
-    auto reveal_show = shop_scene_manager.GetMethod("ShouldShowRevealSequence");
-    if (reveal_show == nullptr) {
-      ErrorMsg::MissingMethod("ShopSceneManager", "ShouldShowRevealSequence");
-    } else {
-      SPUD_STATIC_DETOUR(reveal_show, ShouldShowRevealHook);
-    }
+    SAFE_STATIC_DETOUR(shop_scene_manager, "ShopSceneManager", "ShouldShowRevealSequence", 1, ShouldShowRevealHook);
   }
 
   static auto interstitial_controller =
@@ -302,12 +285,7 @@ void InstallTempCrashFixes()
   if (!interstitial_controller.isValidHelper()) {
     ErrorMsg::MissingHelper("Interstitial", "InterstitialViewController");
   } else {
-    auto interstitial_show = interstitial_controller.GetMethod("AboutToShow");
-    if (interstitial_show == nullptr) {
-      ErrorMsg::MissingMethod("InterstitialViewController", "AboutToShow");
-    } else {
-      SPUD_STATIC_DETOUR(interstitial_show, InterstitialViewController_AboutToShow);
-    }
+    SAFE_STATIC_DETOUR(interstitial_controller, "InterstitialViewController", "AboutToShow", 0, InterstitialViewController_AboutToShow);
   }
 
   static auto actionqueue_manager =

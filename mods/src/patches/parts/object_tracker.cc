@@ -88,8 +88,10 @@ void* track_ctor(auto original, void* _this)
   typedef void      (*FinalizerCallback)(void* object, void* client_data);
   FinalizerCallback oldCallback = nullptr;
   void*             oldData     = nullptr;
-  GC_register_finalizer_inner((intptr_t)_this, track_finalizer, nullptr, &oldCallback, &oldData);
-  assert(!oldCallback);
+  if (GC_register_finalizer_inner) {
+    GC_register_finalizer_inner((intptr_t)_this, track_finalizer, nullptr, &oldCallback, &oldData);
+    assert(!oldCallback);
+  }
   add_to_tracking_recursive(cls->klass, _this);
   return obj;
 }
@@ -155,6 +157,17 @@ template <typename T> void TrackObject()
   auto& object_class = T::get_class_helper();
   auto  ctor         = object_class.GetMethod(".ctor");
   auto  on_destroy   = object_class.GetMethod("OnDestroy");
+
+  if (ctor == nullptr) {
+    spdlog::error("ObjectTracker: Unable to find .ctor for '{}'", object_class.get_cls() ? object_class.get_cls()->name : "unknown");
+    return;
+  }
+
+  if (on_destroy == nullptr) {
+    spdlog::error("ObjectTracker: Unable to find OnDestroy for '{}'", object_class.get_cls() ? object_class.get_cls()->name : "unknown");
+    return;
+  }
+
   if (seen_ctor.find(ctor) == seen_ctor.end()) {
     SPUD_STATIC_DETOUR(ctor, track_ctor);
     seen_ctor.emplace(ctor);
@@ -197,6 +210,10 @@ void InstallObjectTrackers()
 #endif
 #endif
 
-  const auto GC_register_finalizer_inner_match = GC_register_finalizer_inner_matches.get(0);
-  GC_register_finalizer_inner = (decltype(GC_register_finalizer_inner))GC_register_finalizer_inner_match.address();
+  if (GC_register_finalizer_inner_matches.size() == 0) {
+    spdlog::error("ObjectTracker: Failed to find GC_register_finalizer_inner signature");
+  } else {
+    const auto GC_register_finalizer_inner_match = GC_register_finalizer_inner_matches.get(0);
+    GC_register_finalizer_inner = (decltype(GC_register_finalizer_inner))GC_register_finalizer_inner_match.address();
+  }
 }

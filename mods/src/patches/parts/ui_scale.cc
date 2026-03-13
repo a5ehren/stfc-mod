@@ -10,6 +10,8 @@
 #include <spdlog/spdlog.h>
 #include <spud/detour.h>
 
+#include "patches/safe_detour.h"
+
 #include <prime/Vector3.h>
 #include <str_utils.h>
 
@@ -71,12 +73,7 @@ void InstallUiScaleHooks()
   if (!screen_manager_helper.isValidHelper()) {
     ErrorMsg::MissingHelper("UI", "ScreenManager");
   } else {
-    auto ptr_update_scale = screen_manager_helper.GetMethod("UpdateCanvasRootScaleFactor");
-    if (ptr_update_scale == nullptr) {
-      ErrorMsg::MissingMethod("ScreenManager", "UpdateCanvasRootScaleFactor");
-    } else {
-      SPUD_STATIC_DETOUR(ptr_update_scale, ScreenManager_UpdateCanvasRootScaleFactor_Hook);
-    }
+    SAFE_STATIC_DETOUR(screen_manager_helper, "ScreenManager", "UpdateCanvasRootScaleFactor", 0, ScreenManager_UpdateCanvasRootScaleFactor_Hook);
   }
 
   auto canvas_controller_helper = il2cpp_get_class_helper("Assembly-CSharp", "Digit.Client.UI", "CanvasController");

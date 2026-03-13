@@ -8,6 +8,8 @@
 
 #include <spud/detour.h>
 
+#include "patches/safe_detour.h"
+
 TKTouch *TKTouch_populateWithPosition_Hook(auto original, TKTouch *_this, uintptr_t pos, TouchPhase phase)
 {
   auto r = original(_this, pos, phase);
@@ -47,21 +49,13 @@ void InstallPanHooks()
   if (auto touchHelper = il2cpp_get_class_helper("TouchKit", "", "TKTouch"); !touchHelper.isValidHelper()) {
     ErrorMsg::MissingHelper("<global>", "TKTouch");
   } else {
-    if (const auto ptr = touchHelper.GetMethod("populateWithPosition"); ptr == nullptr) {
-      ErrorMsg::MissingMethod("TKTouch", "populateWithPosition");
-    } else {
-      SPUD_STATIC_DETOUR(ptr, TKTouch_populateWithPosition_Hook);
-    }
+    SAFE_STATIC_DETOUR(touchHelper, "TKTouch", "populateWithPosition", 2, TKTouch_populateWithPosition_Hook);
   }
 
   if (auto navHelper = il2cpp_get_class_helper("Assembly-CSharp", "Digit.Prime.Navigation", "NavigationPan");
       !navHelper.isValidHelper()) {
     ErrorMsg::MissingHelper("Navigation", "NavigationPan");
   } else {
-    if (const auto ptr = navHelper.GetMethod("LateUpdate"); ptr == nullptr) {
-      ErrorMsg::MissingMethod("NavigationPan", "LateUpdate");
-    } else {
-      SPUD_STATIC_DETOUR(ptr, NavigationPan_LateUpdate_Hook);
-    }
+    SAFE_STATIC_DETOUR(navHelper, "NavigationPan", "LateUpdate", 0, NavigationPan_LateUpdate_Hook);
   }
 }

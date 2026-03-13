@@ -11,6 +11,8 @@
 #include <spdlog/spdlog.h>
 #include <spud/detour.h>
 
+#include "patches/safe_detour.h"
+
 vec3 GetMouseWorldPos(void *cam, vec3 *pos)
 {
   static auto class_helper = il2cpp_get_class_helper("Digit.Client.PrimeLib.Runtime", "Digit.Client.Core", "MathUtils");
@@ -197,27 +199,11 @@ void InstallZoomHooks()
   if (!screen_manager_helper.isValidHelper()) {
     ErrorMsg::MissingHelper("Navigation", "NavigationZoom");
   } else {
-    auto ptr_update = screen_manager_helper.GetMethod("Update");
-    if (ptr_update == nullptr) {
-      ErrorMsg::MissingMethod("NavigationZoom", "Update");
-    } else {
-      SPUD_STATIC_DETOUR(ptr_update, NavigationZoom_Update_Hook);
-    }
-
-    auto ptr_set_depth = screen_manager_helper.GetMethod("SetDepth");
-    if (ptr_set_depth == nullptr) {
-      ErrorMsg::MissingMethod("NavigationZoom", "SetDepth");
-    } else {
-      SPUD_STATIC_DETOUR(ptr_set_depth, NavigationZoom_SetDepth_Hook);
-    }
+    SAFE_STATIC_DETOUR(screen_manager_helper, "NavigationZoom", "Update", 0, NavigationZoom_Update_Hook);
+    SAFE_STATIC_DETOUR(screen_manager_helper, "NavigationZoom", "SetDepth", 1, NavigationZoom_SetDepth_Hook);
 
 #if _WIN32
-    auto ptr_set_view_parameters = screen_manager_helper.GetMethod("SetViewParameters");
-    if (ptr_set_view_parameters == nullptr) {
-      ErrorMsg::MissingMethod("NavigationZoom", "SetViewParameters");
-    } else {
-      SPUD_STATIC_DETOUR(ptr_set_view_parameters, NavigationZoom_SetViewParameters_Hook);
-    }
+    SAFE_STATIC_DETOUR(screen_manager_helper, "NavigationZoom", "SetViewParameters", 2, NavigationZoom_SetViewParameters_Hook);
 
     // auto ptr_apply_range_changes = screen_manager_helper.GetMethod("ApplyRangeChanges");
     // if (ptr_apply_range_changes == nullptr) {

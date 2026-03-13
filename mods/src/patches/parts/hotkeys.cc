@@ -2,6 +2,9 @@
 
 #include <spud/detour.h>
 
+#include "errormsg.h"
+#include "patches/safe_detour.h"
+
 // Object Viewers
 #include "prime/AllianceStarbaseObjectViewerWidget.h"
 #include "prime/ArmadaObjectViewerWidget.h"
@@ -834,24 +837,14 @@ void InstallHotkeyHooks()
   if (!shortcuts_manager_helper.isValidHelper()) {
     ErrorMsg::MissingHelper("GameInput", "ShortcutsManager");
   } else {
-    auto ptr_can_user_shortcuts = shortcuts_manager_helper.GetMethod("InitializeActions");
-    if (ptr_can_user_shortcuts == nullptr) {
-      ErrorMsg::MissingMethod("ShortcutsManager", "InitializeActions");
-    } else {
-      SPUD_STATIC_DETOUR(ptr_can_user_shortcuts, InitializeActions_Hook);
-    }
+    SAFE_STATIC_DETOUR(shortcuts_manager_helper, "ShortcutsManager", "InitializeActions", 0, InitializeActions_Hook);
   }
 
   auto screen_manager_helper = il2cpp_get_class_helper("Assembly-CSharp", "Digit.Client.UI", "ScreenManager");
   if (!screen_manager_helper.isValidHelper()) {
     ErrorMsg::MissingHelper("UI", "ScreenManager");
   } else {
-    auto ptr_update = screen_manager_helper.GetMethod("Update");
-    if (ptr_update == nullptr) {
-      ErrorMsg::MissingMethod("ScreenManager", "Update");
-    } else {
-      SPUD_STATIC_DETOUR(ptr_update, ScreenManager_Update_Hook);
-    }
+    SAFE_STATIC_DETOUR(screen_manager_helper, "ScreenManager", "Update", 0, ScreenManager_Update_Hook);
   }
 
   static auto rewards_button_widget =
@@ -859,13 +852,7 @@ void InstallHotkeyHooks()
   if (!rewards_button_widget.isValidHelper()) {
     ErrorMsg::MissingHelper("Combat", "RewardsButtonWidget");
   } else {
-    auto on_did_bind_context_ptr = rewards_button_widget.GetMethod("OnDidBindContext");
-    on_did_bind_context_ptr      = on_did_bind_context_ptr;
-    if (on_did_bind_context_ptr == nullptr) {
-      ErrorMsg::MissingMethod("RewardsButtonWidget", "OnDidBindContext");
-    } else {
-      SPUD_STATIC_DETOUR(on_did_bind_context_ptr, OnDidBindContext_Hook);
-    }
+    SAFE_STATIC_DETOUR(rewards_button_widget, "RewardsButtonWidget", "OnDidBindContext", 0, OnDidBindContext_Hook);
   }
 
   static auto pre_scan_target_widget =
@@ -873,12 +860,6 @@ void InstallHotkeyHooks()
   if (!pre_scan_target_widget.isValidHelper()) {
     ErrorMsg::MissingHelper("Combat", "PreScanTargetWidget");
   } else {
-    auto show_with_fleet_ptr = pre_scan_target_widget.GetMethod("ShowWithFleet");
-    show_with_fleet_ptr      = show_with_fleet_ptr;
-    if (show_with_fleet_ptr == nullptr) {
-      ErrorMsg::MissingMethod("PreScanTargetWidget", "ShowWithFleet");
-    } else {
-      SPUD_STATIC_DETOUR(show_with_fleet_ptr, ShowWithFleet_Hook);
-    }
+    SAFE_STATIC_DETOUR(pre_scan_target_widget, "PreScanTargetWidget", "ShowWithFleet", 1, ShowWithFleet_Hook);
   }
 }

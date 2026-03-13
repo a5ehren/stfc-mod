@@ -8,6 +8,8 @@
 #include <spud/detour.h>
 #include <tuple>
 
+#include "patches/safe_detour.h"
+
 auto GetChatTabIndices()
 {
   if (const auto chat_manager = ChatManager::Instance(); chat_manager) {
@@ -147,45 +149,17 @@ void InstallChatPatches()
       !fullscreen_controller.isValidHelper()) {
     ErrorMsg::MissingHelper("Chat", "FullScreenChatViewController");
   } else {
-    if (const auto ptr = fullscreen_controller.GetMethod("AboutToShow"); ptr == nullptr) {
-      ErrorMsg::MissingMethod("FullScreenChatViewController", "AboutToShow");
-    } else {
-      SPUD_STATIC_DETOUR(ptr, FullScreenChatViewController_AboutToShow);
-    }
-
-    if (const auto ptr = fullscreen_controller.GetMethod("OnDidChangeSelectedTab"); ptr == nullptr) {
-      ErrorMsg::MissingMethod("FullScreenChatViewController", "OnDidChangeSelectedTab");
-    } else {
-      SPUD_STATIC_DETOUR(ptr, FullScreenChatViewController_OnDidChangeSelectedTab);
-    }
+    SAFE_STATIC_DETOUR(fullscreen_controller, "FullScreenChatViewController", "AboutToShow", 0, FullScreenChatViewController_AboutToShow);
+    SAFE_STATIC_DETOUR(fullscreen_controller, "FullScreenChatViewController", "OnDidChangeSelectedTab", 2, FullScreenChatViewController_OnDidChangeSelectedTab);
   }
 
   if (auto preview_controller = il2cpp_get_class_helper("Assembly-CSharp", "Digit.Prime.Chat", "ChatPreviewController");
       !preview_controller.isValidHelper()) {
     ErrorMsg::MissingHelper("Chat", "ChatPreviewController");
   } else {
-    if (const auto ptr = preview_controller.GetMethod("AboutToShow"); ptr == nullptr) {
-      ErrorMsg::MissingMethod("ChatPreviewController", "AboutToShow");
-    } else {
-      SPUD_STATIC_DETOUR(ptr, ChatPreviewController_AboutToShow);
-    }
-
-    if (const auto ptr = preview_controller.GetMethod("OnPanelFocused"); ptr == nullptr) {
-      ErrorMsg::MissingMethod("ChatPreviewController", "OnPanelFocused");
-    } else {
-      SPUD_STATIC_DETOUR(ptr, ChatPreviewController_OnPanelFocused);
-    }
-
-    if (const auto ptr = preview_controller.GetMethod("OnGlobalMessageReceived"); ptr == nullptr) {
-      ErrorMsg::MissingMethod("ChatPreviewController", "OnGlobalMessageReceived");
-    } else {
-      SPUD_STATIC_DETOUR(ptr, ChatPreviewController_OnGlobalMessageReceived);
-    }
-
-    if (const auto ptr = preview_controller.GetMethod("OnRegionalMessageReceived"); ptr == nullptr) {
-      ErrorMsg::MissingMethod("ChatPreviewController", "OnRegionalMessageReceived");
-    } else {
-      SPUD_STATIC_DETOUR(ptr, ChatPreviewController_OnRegionalMessageReceived);
-    }
+    SAFE_STATIC_DETOUR(preview_controller, "ChatPreviewController", "AboutToShow", 0, ChatPreviewController_AboutToShow);
+    SAFE_STATIC_DETOUR(preview_controller, "ChatPreviewController", "OnPanelFocused", 1, ChatPreviewController_OnPanelFocused);
+    SAFE_STATIC_DETOUR(preview_controller, "ChatPreviewController", "OnGlobalMessageReceived", 1, ChatPreviewController_OnGlobalMessageReceived);
+    SAFE_STATIC_DETOUR(preview_controller, "ChatPreviewController", "OnRegionalMessageReceived", 1, ChatPreviewController_OnRegionalMessageReceived);
   }
 }

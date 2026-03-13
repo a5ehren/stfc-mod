@@ -6,6 +6,8 @@
 
 #include <spud/detour.h>
 
+#include "patches/safe_detour.h"
+
 struct ToastObserver {
 };
 
@@ -35,16 +37,7 @@ void InstallToastBannerHooks()
       !helper.isValidHelper()) {
     ErrorMsg::MissingHelper("HUD", "ToastObserver");
   } else {
-    if (const auto ptr = helper.GetMethod("EnqueueToast"); ptr == nullptr) {
-      ErrorMsg::MissingMethod("ToastObserver", "EnqueueToast");
-    } else {
-      SPUD_STATIC_DETOUR(ptr, ToastObserver_EnqueueToast_Hook);
-    }
-
-    if (const auto ptr = helper.GetMethod("EnqueueOrCombineToast"); ptr == nullptr) {
-      ErrorMsg::MissingMethod("ToastObserver", "EnqueueOrCombineToast");
-    } else {
-      SPUD_STATIC_DETOUR(ptr, ToastObserver_EnqueueOrCombineToast_Hook);
-    }
+    SAFE_STATIC_DETOUR(helper, "ToastObserver", "EnqueueToast", 1, ToastObserver_EnqueueToast_Hook);
+    SAFE_STATIC_DETOUR(helper, "ToastObserver", "EnqueueOrCombineToast", 2, ToastObserver_EnqueueOrCombineToast_Hook);
   }
 }

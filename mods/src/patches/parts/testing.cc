@@ -25,6 +25,8 @@
 #include <spud/detour.h>
 #include <spud/signature.h>
 
+#include "patches/safe_detour.h"
+
 class AppConfig
 {
 public:
@@ -155,24 +157,14 @@ void InstallTestPatches()
   if (!cursorManager.isValidHelper()) {
     ErrorMsg::MissingHelper("UnityEngine", "Cursor");
   } else {
-    auto cursorMethod = cursorManager.GetMethod("SetCursor_Injected");
-    if (cursorMethod == nullptr) {
-      ErrorMsg::MissingMethod("Cursor", "SetCursor_Injected");
-    } else {
-      SPUD_STATIC_DETOUR(cursorMethod, Cursor_SetCursor);
-    }
+    SAFE_STATIC_DETOUR(cursorManager, "Cursor", "SetCursor_Injected", 3, Cursor_SetCursor);
   }
 
   auto model = il2cpp_get_class_helper("Assembly-CSharp", "Digit.Client.Core", "Model");
   if (!model.isValidHelper()) {
     ErrorMsg::MissingHelper("Core", "Model");
   } else {
-    auto load_configs_ptr = model.GetMethod("LoadConfigs");
-    if (load_configs_ptr == nullptr) {
-      ErrorMsg::MissingMethod("Model", "LoadConfigs");
-    } else {
-      SPUD_STATIC_DETOUR(load_configs_ptr, Model_LoadConfigs);
-    }
+    SAFE_STATIC_DETOUR(model, "Model", "LoadConfigs", 0, Model_LoadConfigs);
   }
 
   auto battle_target_data =
@@ -193,12 +185,6 @@ void InstallTestPatches()
   if (!queue_manager.isValidHelper()) {
     ErrorMsg::MissingHelper("ActionQueue", "ActionQueueManager");
   } else {
-
-    auto is_queue_unlocked = queue_manager.GetMethod("IsQueueUnlocked");
-    if (is_queue_unlocked == nullptr) {
-      ErrorMsg::MissingStaticMethod("GameObject", "IsQueueUnlocked");
-    } else {
-      SPUD_STATIC_DETOUR(is_queue_unlocked, IsQueueEnabled);
-    }
+    SAFE_STATIC_DETOUR(queue_manager, "ActionQueueManager", "IsQueueUnlocked", 0, IsQueueEnabled);
   }
 }
