@@ -96,7 +96,16 @@ static bool needs_relocate(uintptr_t decoder_offset, uintptr_t code_end,
     }
     return false;
   };
+  auto is_ldr_literal = [&]() {
+    if (instruction.id != ARM64_INS_LDR && instruction.id != ARM64_INS_LDRSW)
+      return false;
+    // LDR literal has an IMM operand (the absolute PC-relative target)
+    // Regular LDR has a MEM operand (base register + offset)
+    return detail.op_count >= 2 && detail.operands[1].type == AARCH64_OP_IMM;
+  };
+
   if (instruction.id != ARM64_INS_ADRP && instruction.id != ARM64_INS_ADR &&
+      !is_ldr_literal() &&
       !has_group(ARM64_GRP_BRANCH_RELATIVE) && !has_group(ARM64_GRP_JUMP) &&
       !has_group(ARM64_GRP_CALL)) {
     return false;
@@ -115,6 +124,11 @@ static bool needs_relocate(uintptr_t decoder_offset, uintptr_t code_end,
     if (op.type == AARCH64_OP_IMM) {
       const auto offset = op.imm;
       result = offset;
+    }
+  } else if (is_ldr_literal()) {
+    const auto &op = detail.operands[1];
+    if (op.type == AARCH64_OP_IMM) {
+      result = op.imm;
     }
   } else if (instruction.detail->groups_count > 0) {
     if (has_group(ARM64_GRP_BRANCH_RELATIVE) || has_group(ARM64_GRP_JUMP) ||
