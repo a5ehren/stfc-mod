@@ -96,10 +96,11 @@ inline std::unordered_set<void*>& HookedAddresses()
       spdlog::error("{}::{}: expected {} params, got {} — skipping hook", class_name, method_name, expected_params,    \
                      _sd_method_info->parameters_count);                                                               \
       SafeDetour::LogMethodParams(_sd_method_info, class_name, method_name);                                           \
-    } else if (!SafeDetour::HookedAddresses().insert((void*)_sd_method_info->methodPointer).second) {                 \
+    } else if (SafeDetour::HookedAddresses().count((void*)_sd_method_info->methodPointer)) {                            \
       spdlog::warn("{}::{}: addr {:#x} already hooked — skipping double-hook", class_name,                             \
                     method_name, reinterpret_cast<uintptr_t>(_sd_method_info->methodPointer));                         \
     } else {                                                                                                           \
       SPUD_STATIC_DETOUR((void*)_sd_method_info->methodPointer, hook_fn);                                              \
+      SafeDetour::HookedAddresses().insert((void*)_sd_method_info->methodPointer);                                     \
     }                                                                                                                  \
   } while (0)

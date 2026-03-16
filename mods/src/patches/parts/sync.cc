@@ -2027,63 +2027,6 @@ void DataContainer_ParseEntitySlotsData(auto original, void* _this, EntityGroup*
   return original(_this, group);
 }
 
-#if _WIN32
-void DataContainer_ParseRtcPayload(auto original, void* _this, bool incrementalJsonParsing, RealtimeDataPayload* data)
-{
-  original(_this, incrementalJsonParsing, data);
-
-  if (data == nullptr || data->Target == nullptr || data->DataType == nullptr || data->Data == nullptr) {
-    return;
-  }
-
-  const auto target = to_string(data->Target);
-  if (target != "slot:assign" && target != "slot:clear") {
-    return;
-  }
-
-  const auto type_string = to_string(data->DataType);
-  if (std::stoi(type_string) != DataType::JSON) {
-    return;
-  }
-
-  const auto rtcData = to_string(data->Data);
-  auto payload = std::make_unique<std::string>(rtcData);
-
-  std::thread([p = std::move(payload)]() mutable {
-    try {
-      process_entity_slots_rtc(std::move(p));
-    } catch (const std::exception& e) {
-      spdlog::error("Exception in ParseRtcPayload: {}", e.what());
-    } catch (...) {
-      spdlog::error("Unknown exception in ParseRtcPayload");
-    }
-  }).detach();
-}
-
-void GameServerModelRegistry_ProcessResultInternal(auto original, void* _this, HttpResponse* http_response,
-                                                   ServiceResponse* service_response, void* callback,
-                                                   void* callback_error)
-{
-  auto* const entity_groups = service_response->EntityGroups;
-  for (int i = 0; i < entity_groups->Count; ++i) {
-    auto* const entity_group = entity_groups->get_Item(i);
-    HandleEntityGroup(entity_group);
-  }
-
-  return original(_this, http_response, service_response, callback, callback_error);
-}
-
-void GameServerModelRegistry_HandleBinaryObjects(auto original, void* _this, ServiceResponse* service_response)
-{
-  auto* const entity_groups = service_response->EntityGroups;
-  for (int i = 0; i < entity_groups->Count; ++i) {
-    auto* const entity_group = entity_groups->get_Item(i);
-    HandleEntityGroup(entity_group);
-  }
-
-  return original(_this, service_response);
-}
-#else
 void DataContainer_ParseSlotData(auto original, void* _this, void* entity_slot, Il2CppString* channel_id)
 {
   return original(_this, entity_slot, channel_id);
@@ -2112,7 +2055,6 @@ void GameServerModelRegistry_ParseBinaryObjectsHelper(auto original, void* _this
 
   return original(_this, parsing_context, service_response, method);
 }
-#endif
 
 void PrimeApp_InitPrimeServer(auto original, void* _this, Il2CppString* gameServerUrl, Il2CppString* gatewayServerUrl,
                               Il2CppString* sessionId, Il2CppString* serverRegion)
@@ -2144,17 +2086,10 @@ void InstallSyncPatches()
       !game_server_model_registry.isValidHelper()) {
     ErrorMsg::MissingHelper("Core", "GameServerModelRegistry");
   } else {
-#if _WIN32
-    SAFE_STATIC_DETOUR(game_server_model_registry, "GameServerModelRegistry", "ProcessResultInternal", 4,
-                        GameServerModelRegistry_ProcessResultInternal);
-    SAFE_STATIC_DETOUR(game_server_model_registry, "GameServerModelRegistry", "HandleBinaryObjects", 1,
-                        GameServerModelRegistry_HandleBinaryObjects);
-#else
     SAFE_STATIC_DETOUR(game_server_model_registry, "GameServerModelRegistry", "ProcessResultInternal", 2,
                         GameServerModelRegistry_ProcessResultInternal);
     SAFE_STATIC_DETOUR(game_server_model_registry, "GameServerModelRegistry", "ParseBinaryObjectsHelper", 2,
                         GameServerModelRegistry_ParseBinaryObjectsHelper);
-#endif
   }
 
   if (auto platform_model_registry =
@@ -2162,13 +2097,8 @@ void InstallSyncPatches()
       !platform_model_registry.isValidHelper()) {
     ErrorMsg::MissingHelper("Core", "PlatformModelRegistry");
   } else {
-#if _WIN32
-    SAFE_STATIC_DETOUR(platform_model_registry, "PlatformModelRegistry", "ProcessResultInternal", 4,
-                        GameServerModelRegistry_ProcessResultInternal);
-#else
     SAFE_STATIC_DETOUR(platform_model_registry, "PlatformModelRegistry", "ProcessResultInternal", 2,
                         GameServerModelRegistry_ProcessResultInternal);
-#endif
   }
 
   if (auto buff_data_container =
@@ -2251,13 +2181,8 @@ void InstallSyncPatches()
                         DataContainer_ParseEntitySlotsData);
     // v48084: ParseSlotUpdatedJson/ParseSlotRemovedJson renamed to UpdateSlotData/RemoveSlotData
     // with new signature (EntitySlot, String channelId) — hook needs rewrite to match.
-#if _WIN32
-    SAFE_STATIC_DETOUR(slot_data_container, "SlotDataContainer", "ParseSlotUpdatedJson", 2, DataContainer_ParseRtcPayload);
-    SAFE_STATIC_DETOUR(slot_data_container, "SlotDataContainer", "ParseSlotRemovedJson", 2, DataContainer_ParseRtcPayload);
-#else
     SAFE_STATIC_DETOUR(slot_data_container, "SlotDataContainer", "UpdateSlotData", 2, DataContainer_ParseSlotData);
     SAFE_STATIC_DETOUR(slot_data_container, "SlotDataContainer", "RemoveSlotData", 2, DataContainer_ParseSlotData);
-#endif
   }
 
   if (auto prime_app = il2cpp_get_class_helper("Assembly-CSharp", "Digit.Client.Core", "PrimeApp");
