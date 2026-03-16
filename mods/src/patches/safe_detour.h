@@ -5,6 +5,8 @@
 #include <spdlog/spdlog.h>
 #include <spud/detour.h>
 
+#include <unordered_set>
+
 namespace SafeDetour
 {
 
@@ -70,6 +72,15 @@ inline void DumpClassFields(IL2CppClassHelper& helper, const char* class_name)
   spdlog::info("  [dump] Total: {} fields on {}", count, class_name);
 }
 
+// Track already-hooked addresses to prevent double-hooking.
+// When two IL2CPP classes share the same compiled method, hooking
+// the same methodPointer twice corrupts the second trampoline.
+inline std::unordered_set<void*>& HookedAddresses()
+{
+  static std::unordered_set<void*> addresses;
+  return addresses;
+}
+
 }; // namespace SafeDetour
 
 // Safe detour macro that validates parameter count before installing the hook.
@@ -85,7 +96,13 @@ inline void DumpClassFields(IL2CppClassHelper& helper, const char* class_name)
       spdlog::error("{}::{}: expected {} params, got {} — skipping hook", class_name, method_name, expected_params,    \
                      _sd_method_info->parameters_count);                                                               \
       SafeDetour::LogMethodParams(_sd_method_info, class_name, method_name);                                           \
+    } else if (!SafeDetour::HookedAddresses().insert((void*)_sd_method_info->methodPointer).second) {                 \
+      spdlog::warn("{}::{}: addr {:#x} already hooked — skipping double-hook", class_name,                             \
+                    method_name, reinterpret_cast<uintptr_t>(_sd_method_info->methodPointer));                         \
     } else {                                                                                                           \
+      spdlog::info("{}::{}: hooking at {:#x} first_insn={:#010x}", class_name, method_name,                           \
+                    reinterpret_cast<uintptr_t>(_sd_method_info->methodPointer),                                       \
+                    *reinterpret_cast<uint32_t*>(_sd_method_info->methodPointer));                                     \
       SPUD_STATIC_DETOUR((void*)_sd_method_info->methodPointer, hook_fn);                                              \
     }                                                                                                                  \
   } while (0)
