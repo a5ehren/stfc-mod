@@ -56,7 +56,6 @@ namespace Patches
   constexpr bool miscpatches                = true;
   constexpr bool objecttracker              = true;
   constexpr bool panhooks                   = true;
-  constexpr bool resolutionlistfix          = true;
   constexpr bool syncpatches                = true;
   constexpr bool tempcrashfixes             = true;
   constexpr bool testpatches                = true;

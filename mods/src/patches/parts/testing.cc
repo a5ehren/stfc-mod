@@ -131,16 +131,6 @@ AppConfig* Model_LoadConfigs(auto original, Model* _this)
   return config;
 }
 
-void SetActive_hook(auto original, void* _this, bool active)
-{
-  static auto IsActiveSelf = il2cpp_resolve_icall_typed<bool(void*)>("UnityEngine.GameObject::get_activeSelf()");
-
-  if (active && IsActiveSelf(_this)) {
-    return;
-    // __debugbreak();
-  }
-  return original(_this, active);
-}
 
 bool IsQueueEnabled(auto original, void* _this)
 {
@@ -165,20 +155,6 @@ void InstallTestPatches()
     ErrorMsg::MissingHelper("Core", "Model");
   } else {
     SAFE_STATIC_DETOUR(model, "Model", "LoadConfigs", 0, Model_LoadConfigs);
-  }
-
-  auto battle_target_data =
-      il2cpp_get_class_helper("Digit.Client.PrimeLib.Runtime", "Digit.PrimeServer.Models", "BattleTargetData");
-  if (!battle_target_data.isValidHelper()) {
-    ErrorMsg::MissingHelper("Models", "BattleTargetData");
-  } else {
-    static auto SetActive =
-        il2cpp_resolve_icall_typed<void(void*, bool)>("UnityEngine.GameObject::SetActive(System.Boolean)");
-    if (SetActive == nullptr) {
-      ErrorMsg::MissingStaticMethod("GameObject", "SetActive");
-    } else {
-      SPUD_STATIC_DETOUR(SetActive, SetActive_hook);
-    }
   }
 
   auto queue_manager = il2cpp_get_class_helper("Assembly-CSharp", "Prime.ActionQueue", "ActionQueueManager");

@@ -100,9 +100,6 @@ inline std::unordered_set<void*>& HookedAddresses()
       spdlog::warn("{}::{}: addr {:#x} already hooked — skipping double-hook", class_name,                             \
                     method_name, reinterpret_cast<uintptr_t>(_sd_method_info->methodPointer));                         \
     } else {                                                                                                           \
-      spdlog::info("{}::{}: hooking at {:#x} first_insn={:#010x}", class_name, method_name,                           \
-                    reinterpret_cast<uintptr_t>(_sd_method_info->methodPointer),                                       \
-                    *reinterpret_cast<uint32_t*>(_sd_method_info->methodPointer));                                     \
       SPUD_STATIC_DETOUR((void*)_sd_method_info->methodPointer, hook_fn);                                              \
     }                                                                                                                  \
   } while (0)

@@ -199,7 +199,6 @@ public:
   bool installTestPatches;
   bool installMiscPatches;
   bool installChatPatches;
-  bool installResolutionListFix;
   bool installSyncPatches;
   bool installObjectTracker;
 

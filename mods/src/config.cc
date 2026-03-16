@@ -493,7 +493,6 @@ void Config::Load()
   this->installTestPatches       = get_config_or_default(config, parsed, "patches", "testpatches", DCP::testpatches, write_config);
   this->installMiscPatches       = get_config_or_default(config, parsed, "patches", "miscpatches", DCP::miscpatches, write_config);
   this->installChatPatches       = get_config_or_default(config, parsed, "patches", "chatpatches", DCP::chatpatches, write_config);
-  this->installResolutionListFix = get_config_or_default(config, parsed, "patches", "resolutionlistfix", DCP::resolutionlistfix, write_config);
   this->installSyncPatches       = get_config_or_default(config, parsed, "patches", "syncpatches", DCP::syncpatches, write_config);
   this->installObjectTracker     = get_config_or_default(config, parsed, "patches", "objecttracker", DCP::objecttracker, write_config);
   spdlog::debug("");
@@ -510,7 +509,6 @@ void Config::Load()
   this->installTestPatches                = true;
   this->installMiscPatches                = true;
   this->installChatPatches                = true;
-  this->installResolutionListFix          = true;
   this->installSyncPatches                = true;
   this->installObjectTracker              = true;
 #endif

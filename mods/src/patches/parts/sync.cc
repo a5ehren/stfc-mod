@@ -35,6 +35,7 @@
 #include <atomic>
 #include <chrono>
 #include <condition_variable>
+#include <filesystem>
 #include <format>
 #include <fstream>
 #include <mutex>
@@ -667,7 +668,8 @@ static void load_previously_sent_logs()
   previously_sent_battlelogs.set_capacity(300);
 
   try {
-    std::ifstream file(File::Battles(), std::ios::in | std::ios::binary);
+    const std::filesystem::path path(File::MakePath(File::Battles()));
+    std::ifstream              file(path, std::ios::in | std::ios::binary);
     if (!file.is_open()) {
       spdlog::warn("Failed to open battles file (not found or not readable); starting with empty cache");
       return;
@@ -699,7 +701,8 @@ static void save_previously_sent_logs()
   }
 
   try {
-    std::ofstream file(File::Battles(), std::ios::out | std::ios::binary | std::ios::trunc);
+    const std::filesystem::path path(File::MakePath(File::Battles(), true));
+    std::ofstream               file(path, std::ios::out | std::ios::binary | std::ios::trunc);
     if (!file.is_open()) {
       spdlog::error("Failed to open battles file for writing");
       return;
@@ -2024,6 +2027,7 @@ void DataContainer_ParseEntitySlotsData(auto original, void* _this, EntityGroup*
   return original(_this, group);
 }
 
+#if _WIN32
 void DataContainer_ParseRtcPayload(auto original, void* _this, bool incrementalJsonParsing, RealtimeDataPayload* data)
 {
   original(_this, incrementalJsonParsing, data);
@@ -2056,8 +2060,37 @@ void DataContainer_ParseRtcPayload(auto original, void* _this, bool incrementalJ
   }).detach();
 }
 
+void GameServerModelRegistry_ProcessResultInternal(auto original, void* _this, HttpResponse* http_response,
+                                                   ServiceResponse* service_response, void* callback,
+                                                   void* callback_error)
+{
+  auto* const entity_groups = service_response->EntityGroups;
+  for (int i = 0; i < entity_groups->Count; ++i) {
+    auto* const entity_group = entity_groups->get_Item(i);
+    HandleEntityGroup(entity_group);
+  }
+
+  return original(_this, http_response, service_response, callback, callback_error);
+}
+
+void GameServerModelRegistry_HandleBinaryObjects(auto original, void* _this, ServiceResponse* service_response)
+{
+  auto* const entity_groups = service_response->EntityGroups;
+  for (int i = 0; i < entity_groups->Count; ++i) {
+    auto* const entity_group = entity_groups->get_Item(i);
+    HandleEntityGroup(entity_group);
+  }
+
+  return original(_this, service_response);
+}
+#else
+void DataContainer_ParseSlotData(auto original, void* _this, void* entity_slot, Il2CppString* channel_id)
+{
+  return original(_this, entity_slot, channel_id);
+}
+
 void GameServerModelRegistry_ProcessResultInternal(auto original, void* _this, void* parsing_context,
-                                                   ServiceResponse* service_response)
+                                                   ServiceResponse* service_response, const MethodInfo* method)
 {
   auto *const entity_groups = service_response->EntityGroups;
   for (int i = 0; i < entity_groups->Count; ++i) {
@@ -2065,11 +2098,11 @@ void GameServerModelRegistry_ProcessResultInternal(auto original, void* _this, v
     HandleEntityGroup(entity_group);
   }
 
-  return original(_this, parsing_context, service_response);
+  return original(_this, parsing_context, service_response, method);
 }
 
 void GameServerModelRegistry_ParseBinaryObjectsHelper(auto original, void* _this, void* parsing_context,
-                                                       ServiceResponse* service_response)
+                                                       ServiceResponse* service_response, const MethodInfo* method)
 {
   auto *const entity_groups = service_response->EntityGroups;
   for (int i = 0; i < entity_groups->Count; ++i) {
@@ -2077,8 +2110,9 @@ void GameServerModelRegistry_ParseBinaryObjectsHelper(auto original, void* _this
     HandleEntityGroup(entity_group);
   }
 
-  return original(_this, parsing_context, service_response);
+  return original(_this, parsing_context, service_response, method);
 }
+#endif
 
 void PrimeApp_InitPrimeServer(auto original, void* _this, Il2CppString* gameServerUrl, Il2CppString* gatewayServerUrl,
                               Il2CppString* sessionId, Il2CppString* serverRegion)
@@ -2110,13 +2144,17 @@ void InstallSyncPatches()
       !game_server_model_registry.isValidHelper()) {
     ErrorMsg::MissingHelper("Core", "GameServerModelRegistry");
   } else {
-#if !SPUD_ARCH_ARM64
-    // ProcessResultInternal trampoline crashes on ARM64 (v48084 prologue) — skip on ARM, keep on x86_64/Windows.
+#if _WIN32
+    SAFE_STATIC_DETOUR(game_server_model_registry, "GameServerModelRegistry", "ProcessResultInternal", 4,
+                        GameServerModelRegistry_ProcessResultInternal);
+    SAFE_STATIC_DETOUR(game_server_model_registry, "GameServerModelRegistry", "HandleBinaryObjects", 1,
+                        GameServerModelRegistry_HandleBinaryObjects);
+#else
     SAFE_STATIC_DETOUR(game_server_model_registry, "GameServerModelRegistry", "ProcessResultInternal", 2,
                         GameServerModelRegistry_ProcessResultInternal);
-#endif
     SAFE_STATIC_DETOUR(game_server_model_registry, "GameServerModelRegistry", "ParseBinaryObjectsHelper", 2,
                         GameServerModelRegistry_ParseBinaryObjectsHelper);
+#endif
   }
 
   if (auto platform_model_registry =
@@ -2124,8 +2162,10 @@ void InstallSyncPatches()
       !platform_model_registry.isValidHelper()) {
     ErrorMsg::MissingHelper("Core", "PlatformModelRegistry");
   } else {
-#if !SPUD_ARCH_ARM64
-    // ProcessResultInternal trampoline crashes on ARM64 (v48084 prologue) — skip on ARM, keep on x86_64/Windows.
+#if _WIN32
+    SAFE_STATIC_DETOUR(platform_model_registry, "PlatformModelRegistry", "ProcessResultInternal", 4,
+                        GameServerModelRegistry_ProcessResultInternal);
+#else
     SAFE_STATIC_DETOUR(platform_model_registry, "PlatformModelRegistry", "ProcessResultInternal", 2,
                         GameServerModelRegistry_ProcessResultInternal);
 #endif
@@ -2211,8 +2251,13 @@ void InstallSyncPatches()
                         DataContainer_ParseEntitySlotsData);
     // v48084: ParseSlotUpdatedJson/ParseSlotRemovedJson renamed to UpdateSlotData/RemoveSlotData
     // with new signature (EntitySlot, String channelId) — hook needs rewrite to match.
-    // SAFE_STATIC_DETOUR(slot_data_container, "SlotDataContainer", "UpdateSlotData", 2, ...);
-    // SAFE_STATIC_DETOUR(slot_data_container, "SlotDataContainer", "RemoveSlotData", 2, ...);
+#if _WIN32
+    SAFE_STATIC_DETOUR(slot_data_container, "SlotDataContainer", "ParseSlotUpdatedJson", 2, DataContainer_ParseRtcPayload);
+    SAFE_STATIC_DETOUR(slot_data_container, "SlotDataContainer", "ParseSlotRemovedJson", 2, DataContainer_ParseRtcPayload);
+#else
+    SAFE_STATIC_DETOUR(slot_data_container, "SlotDataContainer", "UpdateSlotData", 2, DataContainer_ParseSlotData);
+    SAFE_STATIC_DETOUR(slot_data_container, "SlotDataContainer", "RemoveSlotData", 2, DataContainer_ParseSlotData);
+#endif
   }
 
   if (auto prime_app = il2cpp_get_class_helper("Assembly-CSharp", "Digit.Client.Core", "PrimeApp");

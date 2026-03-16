@@ -32,9 +32,11 @@ public:
 
   void AnimateToZoomDistance(float distance)
   {
-    static auto fn = get_class_helper().GetMethod<void(NavigationZoom*, float)>("AnimateToZoomDistance");
+    static auto method_info = get_class_helper().GetMethodInfo("AnimateToZoomDistance");
+    static auto fn          = get_class_helper().GetMethod<void(NavigationZoom*, float, float, void*, float,
+                                                                const MethodInfo*)>("AnimateToZoomDistance");
     if (fn) {
-      fn(this, distance);
+      fn(this, distance, distance, nullptr, 0.0f, method_info);
     }
   }
 
