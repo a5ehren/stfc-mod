@@ -175,12 +175,14 @@ void InstallZoomHooks()
       SPUD_STATIC_DETOUR(ptr_update, NavigationZoom_Update_Hook);
     }
 
+#if _WIN32
     auto ptr_set_depth = screen_manager_helper.GetMethod("SetDepth");
     if (ptr_set_depth == nullptr) {
       ErrorMsg::MissingMethod("NavigationZoom", "SetDepth");
     } else {
       SPUD_STATIC_DETOUR(ptr_set_depth, NavigationZoom_SetDepth_Hook);
     }
+#endif
 
     auto ptr_set_view_parameters = screen_manager_helper.GetMethod("SetViewParameters");
     if (ptr_set_view_parameters == nullptr) {
