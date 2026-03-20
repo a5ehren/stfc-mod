@@ -77,8 +77,8 @@ namespace headers
   static std::string    instanceSessionId;
   static int32_t        instanceId;
   static std::string    unityVersion{"6000.0.52f1"};
-  static std::string    primeVersion{"1.000.45324"};
-  static std::string    poweredBy{"stfc community patch/" VER_FILE_VERSION_STR};
+  static std::string    primeVersion{"1.000.48084"};
+  static std::string    poweredBy{"stfc community mod/" VER_FILE_VERSION_STR};
 } // namespace headers
 
 [[nodiscard]] static std::string newUUID()
@@ -321,7 +321,7 @@ static std::shared_ptr<TargetWorker> get_curl_client_sync(const std::string& tar
   const auto& target_config = Config::Get().sync_targets[target];
 
   worker->session->SetUrl(target_config.url);
-  worker->session->SetUserAgent("stfc community patch " VER_FILE_VERSION_STR " (libcurl/" LIBCURL_VERSION ")");
+  worker->session->SetUserAgent("stfc community mod " VER_FILE_VERSION_STR " (libcurl/" LIBCURL_VERSION ")");
   worker->session->SetAcceptEncoding(cpr::AcceptEncoding{});
   worker->session->SetHttpVersion(cpr::HttpVersion{cpr::HttpVersionCode::VERSION_1_1});
   worker->session->SetRedirect(cpr::Redirect{3, true, false, cpr::PostRedirectFlags::POST_ALL});

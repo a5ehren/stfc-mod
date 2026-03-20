@@ -34,7 +34,7 @@ jobs:
         run: xmake -y
 
       - name: Package
-        run: mv build/windows/x64/release/stfc-community-patch.dll version.dll
+        run: mv build/windows/x64/release/stfc-community-mod.dll version.dll
 
       - name: Upload
         uses: actions/upload-artifact@v7
@@ -73,8 +73,8 @@ jobs:
       - name: Create App Bundle
         run: |
           lipo -create build/macosx/arm64/release/macOSLauncher build/macosx/x86_64/release/macOSLauncher -output build/macosx/arm64/release/macOSLauncher.app/Contents/MacOS/macOSLauncher
-          lipo -create build/macosx/arm64/release/stfc-community-patch-loader build/macosx/x86_64/release/stfc-community-patch-loader -output build/macosx/arm64/release/macOSLauncher.app/Contents/stfc-community-patch-loader
-          lipo -create build/macosx/arm64/release/libstfc-community-patch.dylib build/macosx/x86_64/release/libstfc-community-patch.dylib -output build/macosx/arm64/release/macOSLauncher.app/Contents/libstfc-community-patch.dylib
+          lipo -create build/macosx/arm64/release/stfc-community-mod-loader build/macosx/x86_64/release/stfc-community-mod-loader -output build/macosx/arm64/release/macOSLauncher.app/Contents/stfc-community-mod-loader
+          lipo -create build/macosx/arm64/release/libstfc-community-mod.dylib build/macosx/x86_64/release/libstfc-community-mod.dylib -output build/macosx/arm64/release/macOSLauncher.app/Contents/libstfc-community-mod.dylib
           cp assets/launcher.icns build/macosx/arm64/release/macOSLauncher.app/Contents/Resources/
           cp macos-launcher/src/Info.plist build/macosx/arm64/release/macOSLauncher.app/Contents/
           mv build/macosx/arm64/release/macOSLauncher.app build/macosx/arm64/release/STFC\ Community\ Mod.app
