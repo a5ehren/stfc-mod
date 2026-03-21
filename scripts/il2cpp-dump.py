@@ -105,6 +105,60 @@ def inspector_binary_path() -> Path:
     return TOOLS_DIR / subdir / inspector_binary_name()
 
 
+@dataclass(frozen=True, slots=True)
+class GameFiles:
+    assembly: Path
+    metadata: Path
+    global_game_managers: Path
+
+
+def locate_game_files(game_dir: Path) -> GameFiles:
+    errors: list[Exception] = []
+
+    match sys.platform:
+        case "darwin":
+            assembly = game_dir / "Contents" / "Frameworks" / "GameAssembly.dylib"
+            data_dir = game_dir / "Contents" / "Resources" / "Data"
+        case "win32":
+            assembly = game_dir / "GameAssembly.dll"
+            data_dirs = sorted(game_dir.glob("*_Data"))
+            match data_dirs:
+                case [single]:
+                    data_dir = single
+                case []:
+                    errors.append(FileNotFoundError("No *_Data directory found in game root"))
+                    data_dir = Path()  # placeholder — will fail below
+                case multiple:
+                    names = ", ".join(d.name for d in multiple)
+                    errors.append(FileNotFoundError(f"Multiple *_Data directories found: {names}"))
+                    data_dir = Path()
+        case _:
+            # Linux: assume Windows-like flat layout
+            assembly = game_dir / "GameAssembly.so"
+            data_dirs = sorted(game_dir.glob("*_Data"))
+            match data_dirs:
+                case [single]:
+                    data_dir = single
+                case _:
+                    errors.append(FileNotFoundError("Could not determine *_Data directory"))
+                    data_dir = Path()
+
+    metadata = data_dir / "il2cpp_data" / "Metadata" / "global-metadata.dat"
+    ggm = data_dir / "globalgamemanagers"
+
+    if not assembly.exists():
+        errors.append(FileNotFoundError(f"Game assembly not found: {assembly}"))
+    if not metadata.exists():
+        errors.append(FileNotFoundError(f"Metadata not found: {metadata}"))
+    if not ggm.exists():
+        errors.append(FileNotFoundError(f"globalgamemanagers not found: {ggm}"))
+
+    if errors:
+        raise ExceptionGroup("Missing game files", errors)
+
+    return GameFiles(assembly=assembly, metadata=metadata, global_game_managers=ggm)
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--game-dir", type=Path, required=True, help="Path to game directory (.app on macOS, game root on Windows)")
@@ -122,6 +176,11 @@ def main() -> None:
 
     inspector = install_inspector(reinstall=args.reinstall)
     print(f"Inspector binary: {inspector}")
+
+    game_files = locate_game_files(game_dir)
+    print(f"Assembly: {game_files.assembly}")
+    print(f"Metadata: {game_files.metadata}")
+    print(f"Managers: {game_files.global_game_managers}")
 
 
 if __name__ == "__main__":
