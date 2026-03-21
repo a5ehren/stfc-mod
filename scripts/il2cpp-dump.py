@@ -105,6 +105,43 @@ def inspector_binary_path() -> Path:
     return TOOLS_DIR / subdir / inspector_binary_name()
 
 
+GAME_VERSION_RE = re.compile(rb"\d+\.\d{3}\.\d{5}")
+UNITY_VERSION_RE = re.compile(rb"\d+\.\d+\.\d+[a-zA-Z]\d+")
+
+
+@dataclass(frozen=True, slots=True)
+class VersionInfo:
+    game_version: str
+    unity_version: str | None
+
+
+def detect_versions(ggm_path: Path, *, override: str | None = None) -> VersionInfo:
+    if override is not None:
+        print(f"Using provided game version: {override}")
+        # Still try to extract Unity version
+        header = ggm_path.read_bytes()[:4096]
+        unity_match = UNITY_VERSION_RE.search(header)
+        unity_version = unity_match.group(0).decode("ascii") if unity_match else None
+        return VersionInfo(game_version=override, unity_version=unity_version)
+
+    header = ggm_path.read_bytes()[:4096]
+
+    game_match = GAME_VERSION_RE.search(header)
+    if game_match is None:
+        sys.exit(
+            "Could not detect game version from globalgamemanagers.\n"
+            "Use --version to specify it manually."
+        )
+
+    unity_match = UNITY_VERSION_RE.search(header)
+    unity_version = unity_match.group(0).decode("ascii") if unity_match else None
+    if unity_version is None:
+        print("Warning: could not detect Unity version. --unity-version will be omitted.", file=sys.stderr)
+
+    game_version = game_match.group(0).decode("ascii")
+    return VersionInfo(game_version=game_version, unity_version=unity_version)
+
+
 @dataclass(frozen=True, slots=True)
 class GameFiles:
     assembly: Path
@@ -181,6 +218,10 @@ def main() -> None:
     print(f"Assembly: {game_files.assembly}")
     print(f"Metadata: {game_files.metadata}")
     print(f"Managers: {game_files.global_game_managers}")
+
+    versions = detect_versions(game_files.global_game_managers, override=args.version)
+    print(f"Game version: {versions.game_version}")
+    print(f"Unity version: {versions.unity_version or 'unknown'}")
 
 
 if __name__ == "__main__":
