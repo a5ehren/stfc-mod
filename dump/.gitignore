@@ -1,5 +1,5 @@
-# Ignore non-JSON dump outputs (types.cs, il2cpp.py, generated dirs)
+# Ignore non-JSON dump outputs
 *.cs
 *.py
-dll/
-cpp/
+*.h
+DummyDll/
