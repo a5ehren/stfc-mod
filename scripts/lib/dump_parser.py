@@ -121,22 +121,30 @@ def _assembly_for_typedef(type_def_index: int, ranges: list[tuple[int, str]]) ->
     return ranges[lo][1]
 
 
-def _extract_field_name(line: str) -> str | None:
-    """Extract field identifier from an indented field line."""
-    # Strip leading tab and any attribute lines (shouldn't get here with attrs)
+def _extract_field_name_and_type(line: str) -> tuple[str, str] | None:
+    """Extract (field_name, cs_type) from an indented field line.
+
+    Example: ``\tprivate float _minimum; // 0x10`` → ``('_minimum', 'float')``
+    The cs_type is the last type token before the field name (accounting for
+    modifiers being stripped first).
+    """
     stripped = line.rstrip()
-    # Remove trailing comment // 0xNN or = value
-    # e.g.: "\tprivate float _foo; // 0x10"
-    # Strip off the comment part
+    # Remove trailing comment
     no_comment = re.sub(r'\s*//.*$', '', stripped)
     no_comment = no_comment.rstrip(';').strip()
-    # Last token is the field name
-    parts = no_comment.split()
+    # Strip leading modifiers
+    no_modifiers = re.sub(
+        r'^(?:(?:public|private|protected|internal|sealed|abstract|static|readonly|const|override|virtual|new|volatile|extern)\s+)+',
+        '', no_comment
+    )
+    # Remaining tokens: first is the type, last is the field name
+    parts = no_modifiers.split()
     if len(parts) >= 2:
-        candidate = parts[-1]
-        # Must be a valid identifier (can start with underscore or letter, but not <)
-        if re.match(r'^[A-Za-z_@<][A-Za-z0-9_<>@.]*$', candidate):
-            return candidate
+        field_name = parts[-1]
+        cs_type = parts[0]
+        # Validate field name
+        if re.match(r'^[A-Za-z_@<][A-Za-z0-9_<>@.]*$', field_name):
+            return field_name, cs_type
     return None
 
 
@@ -156,24 +164,30 @@ def _extract_property_name(line: str) -> str | None:
 
 
 def _extract_method_name_and_sig(line: str) -> tuple[str, str] | None:
-    """Extract (method_name, full_signature) from an indented method line."""
+    """Extract (method_name, full_signature) from an indented method line.
+
+    The full_signature includes modifiers and return type but omits the trailing
+    empty body ``{ }`` and any trailing comment.
+    Example: ``\tprivate void SetDepth(NodeDepth value) { }``
+    → ``('SetDepth', 'private void SetDepth(NodeDepth value)')``
+    """
     stripped = line.strip()
     # Must end with { } (empty body) — possibly with trailing comment
     if not re.search(r'\{\s*\}\s*(?://.*)?$', stripped):
         return None
-    # Remove leading modifiers and trailing body
+    # Remove trailing { } and optional trailing comment, keep everything before
+    decl = re.sub(r'\s*\{\s*\}\s*(?://.*)?$', '', stripped).rstrip()
+    # Extract method name from the declaration
     m = re.match(
         r'(?:(?:public|private|protected|internal|sealed|abstract|static|readonly|override|virtual|new|extern|unsafe|async)\s+)*'
         r'(?:\S+\s+)+'   # return type (one or more tokens)
         r'([A-Za-z_.][A-Za-z0-9_.<>\[\]@`]*)'  # method name
-        r'\s*(\([^)]*\))'    # parameter list
-        r'[^{]*\{\s*\}',
+        r'\s*\(',        # opening paren
         stripped
     )
     if m:
         name = m.group(1)
-        params = m.group(2)
-        return name, f'{name}{params}'
+        return name, decl
     return None
 
 
@@ -353,9 +367,10 @@ def parse_dump(dump_path: Path) -> DumpIndex:
 
                 # Fields: end with ; or // offset comment, or = value;
                 # (after filtering out properties and methods above)
-                field_name = _extract_field_name(line)
-                if field_name and field_name not in current_dc.fields:
-                    current_dc.fields.append(field_name)
+                field_result = _extract_field_name_and_type(line)
+                if field_result and field_result[0] not in current_dc.fields:
+                    field_name, cs_type = field_result
+                    current_dc.fields[field_name] = cs_type
 
     # Resolve deferred nested type registrations (parent declared after nested types)
     for assembly, parent_name, nested_part in deferred_nested:

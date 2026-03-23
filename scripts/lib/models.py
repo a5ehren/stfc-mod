@@ -41,7 +41,7 @@ class DumpClass:
     namespace: str
     name: str
     methods: dict[str, list[str]] = field(default_factory=dict)     # name → [full signatures]
-    fields: list[str] = field(default_factory=list)                  # field names
+    fields: dict[str, str] = field(default_factory=dict)              # field_name → cs_type
     properties: list[str] = field(default_factory=list)              # property names
     nested_types: list[str] = field(default_factory=list)            # nested type names
 
