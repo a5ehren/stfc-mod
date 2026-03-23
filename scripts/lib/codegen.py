@@ -187,14 +187,22 @@ def generate_scaffold(dc: "DumpClass", game_version: str) -> str:  # noqa: F821
     if dc.properties:
         lines.append("  // --- Properties ---")
         for prop_name in dc.properties:
+            # Determine type from getter method's return type
+            prop_cpp_type = "void*"
+            getter_sigs = dc.methods.get(f"get_{prop_name}", [])
+            if getter_sigs:
+                parsed = parse_method_signature(getter_sigs[0])
+                if parsed:
+                    prop_cpp_type = parsed.return_cpp_type
+
             if prop_name in props_with_setter:
                 lines.append(
                     f"  __declspec(property(get = __get_{prop_name},"
-                    f" put = __set_{prop_name})) void* /* {prop_name} */ {prop_name};"
+                    f" put = __set_{prop_name})) {prop_cpp_type} {prop_name};"
                 )
             else:
                 lines.append(
-                    f"  __declspec(property(get = __get_{prop_name})) void* /* {prop_name} */ {prop_name};"
+                    f"  __declspec(property(get = __get_{prop_name})) {prop_cpp_type} {prop_name};"
                 )
 
     # --- Field property declarations ---
@@ -268,13 +276,28 @@ def generate_scaffold(dc: "DumpClass", game_version: str) -> str:  # noqa: F821
     if dc.properties:
         lines.append("  // --- Property accessors ---")
         for prop_name in dc.properties:
-            # We don't know the type from the dump model — use void*/GetRaw pattern
-            lines.append(f"  void* __get_{prop_name}() {{")
-            lines.append(f"    static auto prop = get_class_helper().GetProperty(\"{prop_name}\");")
-            lines.append(f"    return prop.GetRaw<void>(this);")
-            lines.append("  }")
+            # Determine type from getter method's return type
+            prop_cpp_type = "void*"
+            getter_sigs = dc.methods.get(f"get_{prop_name}", [])
+            if getter_sigs:
+                parsed = parse_method_signature(getter_sigs[0])
+                if parsed:
+                    prop_cpp_type = parsed.return_cpp_type
+
+            prim = is_primitive(prop_cpp_type)
+
+            if prim:
+                lines.append(f"  {prop_cpp_type} __get_{prop_name}() {{")
+                lines.append(f"    static auto prop = get_class_helper().GetProperty(\"{prop_name}\");")
+                lines.append(f"    return *prop.Get<{prop_cpp_type}>(this);")
+                lines.append("  }")
+            else:
+                lines.append(f"  {prop_cpp_type} __get_{prop_name}() {{")
+                lines.append(f"    static auto prop = get_class_helper().GetProperty(\"{prop_name}\");")
+                lines.append(f"    return prop.GetRaw<void>(this);")
+                lines.append("  }")
             if prop_name in props_with_setter:
-                lines.append(f"  void __set_{prop_name}(void* v) {{")
+                lines.append(f"  void __set_{prop_name}({prop_cpp_type} v) {{")
                 lines.append(f"    static auto prop = get_class_helper().GetProperty(\"{prop_name}\");")
                 lines.append(f"    prop.SetRaw(this, v);")
                 lines.append("  }")
