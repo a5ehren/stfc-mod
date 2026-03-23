@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import argparse
 import importlib.util
+import json
 import subprocess
 import sys
 from pathlib import Path
@@ -66,7 +67,59 @@ def _format_ref_location(ref) -> str:
     return ref.source_file
 
 
-def _print_report(issues, refs, game_version: str) -> None:
+def _issue_to_dict(issue) -> dict:
+    """Convert an Issue to a JSON-serializable dict."""
+    ref = issue.ref
+    d: dict = {
+        "severity": issue.severity.name.lower(),
+        "type": ref.type.name.lower(),
+        "message": issue.message,
+        "file": ref.source_file,
+        "line": ref.source_line,
+    }
+    if ref.assembly is not None:
+        d["assembly"] = ref.assembly
+    if ref.namespace is not None:
+        d["namespace"] = ref.namespace
+    if ref.class_name is not None:
+        d["class"] = ref.class_name
+    if ref.member_name is not None:
+        d["member"] = ref.member_name
+    if ref.arg_count is not None:
+        d["arg_count"] = ref.arg_count
+    if ref.parent_name is not None:
+        d["parent_name"] = ref.parent_name
+    if ref.icall_signature is not None:
+        d["icall_signature"] = ref.icall_signature
+    if issue.old_signature is not None:
+        d["old_signature"] = issue.old_signature
+    if issue.new_signature is not None:
+        d["new_signature"] = issue.new_signature
+    return d
+
+
+def _print_json(issues, refs, game_version: str, unity_version: str) -> None:
+    """Print machine-readable JSON report to stdout."""
+    from collections import Counter
+    counts = Counter(r.type for r in refs)
+    report = {
+        "game_version": game_version,
+        "unity_version": unity_version,
+        "summary": {
+            "classes": counts[RefType.CLASS],
+            "methods": counts[RefType.METHOD],
+            "fields": counts[RefType.FIELD],
+            "properties": counts[RefType.PROPERTY],
+            "icalls": counts[RefType.ICALL],
+            "missing": sum(1 for i in issues if i.severity == Severity.MISSING),
+            "signature_changed": sum(1 for i in issues if i.severity == Severity.SIGNATURE_CHANGED),
+        },
+        "issues": [_issue_to_dict(i) for i in issues],
+    }
+    print(json.dumps(report, indent=2, ensure_ascii=False))
+
+
+def _print_text(issues, refs, game_version: str) -> None:
     """Print the human-readable validation report to stdout."""
     print(f"\nValidating mod references against dump {game_version}...\n")
 
@@ -112,9 +165,7 @@ def _print_report(issues, refs, game_version: str) -> None:
 
         elif issue.severity == Severity.SIGNATURE_CHANGED:
             label = "SIGNATURE CHANGED"
-            # Extract what changed from the message
             detail = issue.message
-            # Strip leading "Signature changed: " or "Icall signature changed: " prefix
             for prefix in ("Signature changed: ", "Icall signature changed: "):
                 if detail.startswith(prefix):
                     detail = detail[len(prefix):]
@@ -166,10 +217,16 @@ def main() -> int:
                         help="Override the detected game version string")
     parser.add_argument("--dump-only", action="store_true",
                         help="Run dump but skip validation")
+    parser.add_argument("--format", choices=["text", "json"], default="text",
+                        help="Output format (default: text)")
     args = parser.parse_args()
 
     game_dir = Path(args.game_dir)
     version_override: str | None = args.version
+
+    # In JSON mode, progress goes to stderr so stdout is clean JSON
+    def log(msg: str) -> None:
+        print(msg, file=sys.stderr if args.format == "json" else sys.stdout)
 
     # ------------------------------------------------------------------
     # Step 1: Detect game version via Stage-1 helpers
@@ -183,8 +240,8 @@ def main() -> int:
     game_version = versions.game_version
     unity_version = versions.unity_version or "unknown"
 
-    print(f"Game version : {game_version}")
-    print(f"Unity version: {unity_version}")
+    log(f"Game version : {game_version}")
+    log(f"Unity version: {unity_version}")
 
     # ------------------------------------------------------------------
     # Step 2: Ensure dump.cs exists — shell out to il2cpp-dump.py if not
@@ -192,7 +249,7 @@ def main() -> int:
     dump_cs = DUMP_DIR / game_version / "dump.cs"
 
     if not dump_cs.exists():
-        print(f"\ndump.cs not found for {game_version} — running il2cpp-dump.py...")
+        log(f"\ndump.cs not found for {game_version} — running il2cpp-dump.py...")
         cmd = [sys.executable, str(DUMP_SCRIPT), "--game-dir", str(game_dir)]
         if version_override:
             cmd += ["--version", version_override]
@@ -204,31 +261,31 @@ def main() -> int:
             print(f"il2cpp-dump.py finished but {dump_cs} still missing — aborting.",
                   file=sys.stderr)
             return 1
-        print(f"Dump written to {dump_cs}")
+        log(f"Dump written to {dump_cs}")
     else:
-        print(f"Using existing dump: {dump_cs}")
+        log(f"Using existing dump: {dump_cs}")
 
     # ------------------------------------------------------------------
     # Step 3: --dump-only early exit
     # ------------------------------------------------------------------
     if args.dump_only:
-        print("--dump-only flag set, skipping validation.")
+        log("--dump-only flag set, skipping validation.")
         return 0
 
     # ------------------------------------------------------------------
     # Step 4: Extract mod references
     # ------------------------------------------------------------------
-    print("\nExtracting mod references from mods/src/...")
+    log("\nExtracting mod references from mods/src/...")
     refs = extract_references(MOD_SRC)
-    print(f"Found {len(refs)} raw references in mod source.")
+    log(f"Found {len(refs)} raw references in mod source.")
 
     # ------------------------------------------------------------------
     # Step 5: Parse dump.cs
     # ------------------------------------------------------------------
-    print(f"Parsing {dump_cs.name}...")
+    log(f"Parsing {dump_cs.name}...")
     index = parse_dump(dump_cs)
     n_classes_in_dump = len(index.by_qualified_name)
-    print(f"Parsed {n_classes_in_dump} classes from dump.")
+    log(f"Parsed {n_classes_in_dump} classes from dump.")
 
     # ------------------------------------------------------------------
     # Step 6: Validate
@@ -241,11 +298,11 @@ def main() -> int:
     prev_sidecar = find_previous_sidecar(DUMP_DIR, game_version)
     if prev_sidecar is not None:
         prev_version = prev_sidecar.get("game_version", "unknown")
-        print(f"Diffing against previous sidecar (version {prev_version})...")
+        log(f"Diffing against previous sidecar (version {prev_version})...")
         diff_issues = diff_sidecars(prev_sidecar, refs, index)
         issues = issues + diff_issues
     else:
-        print("No previous sidecar found — skipping diff.")
+        log("No previous sidecar found — skipping diff.")
 
     # ------------------------------------------------------------------
     # Step 8: Write sidecar
@@ -253,12 +310,15 @@ def main() -> int:
     sidecar = build_sidecar(refs, index, game_version, unity_version)
     sidecar_path = DUMP_DIR / game_version / "mod-references.json"
     write_sidecar(sidecar, sidecar_path)
-    print(f"Sidecar written to {sidecar_path}")
+    log(f"Sidecar written to {sidecar_path}")
 
     # ------------------------------------------------------------------
     # Step 9: Print report
     # ------------------------------------------------------------------
-    _print_report(issues, refs, game_version)
+    if args.format == "json":
+        _print_json(issues, refs, game_version, unity_version)
+    else:
+        _print_text(issues, refs, game_version)
 
     return 1 if issues else 0
 
