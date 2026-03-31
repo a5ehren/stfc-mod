@@ -172,19 +172,73 @@ def extract_references(source_root: Path) -> list[ModReference]:
     return refs
 
 
-def _build_var_map(text: str) -> tuple[dict[str, tuple[str, str, str]], tuple[str, str, str] | None]:
+def _build_scope_map(
+    lines: list[str],
+) -> dict[int, tuple[str, str, str]]:
+    """Build line → (assembly, namespace, class_name) map using C++ scope tracking.
+
+    Parses struct/class brace scopes and associates each line with the
+    il2cpp_get_class_helper call defined in the same scope.
+
+    Returns a dict mapping line_number → class tuple for lines that are inside
+    a scope with a class helper.
+    """
+    # Step 1: find all il2cpp_get_class_helper calls with line numbers
+    helpers: dict[int, tuple[str, str, str]] = {}
+    for lineno, line in enumerate(lines, start=1):
+        for m in _RE_CLASS_HELPER_BARE.finditer(line):
+            helpers[lineno] = (m.group(1), m.group(2), m.group(3))
+
+    # Step 2: build scope ranges using brace counting
+    # Track top-level struct/class scopes (depth 0 → 1 transitions)
+    scopes: list[tuple[int, int]] = []  # (start_line, end_line)
+    depth = 0
+    scope_start = 0
+
+    for lineno, line in enumerate(lines, start=1):
+        stripped = _strip_line(line)
+        for ch in stripped:
+            if ch == '{':
+                if depth == 0:
+                    scope_start = lineno
+                depth += 1
+            elif ch == '}':
+                depth -= 1
+                if depth == 0 and scope_start > 0:
+                    scopes.append((scope_start, lineno))
+
+    # Step 3: for each scope, find which class helper is defined inside it
+    scope_to_class: dict[tuple[int, int], tuple[str, str, str]] = {}
+    for start, end in scopes:
+        for helper_line, cls in helpers.items():
+            if start <= helper_line <= end:
+                scope_to_class[(start, end)] = cls
+                break
+
+    # Step 4: build line → class map
+    line_to_class: dict[int, tuple[str, str, str]] = {}
+    for start, end in scopes:
+        cls = scope_to_class.get((start, end))
+        if cls is not None:
+            for ln in range(start, end + 1):
+                line_to_class[ln] = cls
+
+    return line_to_class
+
+
+def _build_var_map(
+    text: str,
+    lines: list[str],
+) -> tuple[dict[str, tuple[str, str, str]], dict[int, tuple[str, str, str]]]:
     """Build variable → (assembly, namespace, class_name) map from full file text.
 
-    Returns (var_to_class, file_class) where file_class is the first
-    il2cpp_get_class_helper call found in the file.
+    Returns (var_to_class, scope_map) where scope_map maps each line number
+    to the class helper defined in the same C++ scope.
     """
     var_to_class: dict[str, tuple[str, str, str]] = {}
-    file_class: tuple[str, str, str] | None = None
 
-    # Find the first il2cpp_get_class_helper call for file_class
-    m0 = _RE_CLASS_HELPER_BARE.search(text)
-    if m0:
-        file_class = (m0.group(1), m0.group(2), m0.group(3))
+    # Build scope-aware line → class map
+    scope_map = _build_scope_map(lines)
 
     # Find all variable assignments (multi-line OK due to re.DOTALL)
     for m in _RE_CLASS_HELPER_ASSIGN.finditer(text):
@@ -192,7 +246,7 @@ def _build_var_map(text: str) -> tuple[dict[str, tuple[str, str, str]], tuple[st
         cls = (m.group(2), m.group(3), m.group(4))
         var_to_class[varname] = cls
 
-    return var_to_class, file_class
+    return var_to_class, scope_map
 
 
 def _extract_from_file(filepath: Path, source_root: Path) -> list[ModReference]:
@@ -206,7 +260,7 @@ def _extract_from_file(filepath: Path, source_root: Path) -> list[ModReference]:
     lines = text.splitlines()
 
     # Pass 1: build variable → class map from full text
-    var_to_class, file_class = _build_var_map(text)
+    var_to_class, scope_map = _build_var_map(text, lines)
 
     # Pass 2: extract references line by line
     refs: list[ModReference] = []
@@ -239,7 +293,7 @@ def _extract_from_file(filepath: Path, source_root: Path) -> list[ModReference]:
             obj = _normalize_object(m.group(1))
             method_name = m.group(2)
             arg_count = int(m.group(3)) if m.group(3) else None
-            cls = _resolve_class(obj, var_to_class, file_class)
+            cls = _resolve_class(obj, var_to_class, scope_map, lineno)
             refs.append(ModReference(
                 type=RefType.METHOD,
                 source_file=source_file,
@@ -255,7 +309,7 @@ def _extract_from_file(filepath: Path, source_root: Path) -> list[ModReference]:
         for m in _RE_GET_METHOD_SPECIAL.finditer(line):
             obj = _normalize_object(m.group(1))
             method_name = m.group(2)
-            cls = _resolve_class(obj, var_to_class, file_class)
+            cls = _resolve_class(obj, var_to_class, scope_map, lineno)
             refs.append(ModReference(
                 type=RefType.METHOD,
                 source_file=source_file,
@@ -270,7 +324,7 @@ def _extract_from_file(filepath: Path, source_root: Path) -> list[ModReference]:
         for m in _RE_GET_METHOD_SPECIAL2.finditer(line):
             obj = _normalize_object(m.group(1))
             method_name = m.group(2)
-            cls = _resolve_class(obj, var_to_class, file_class)
+            cls = _resolve_class(obj, var_to_class, scope_map, lineno)
             refs.append(ModReference(
                 type=RefType.METHOD,
                 source_file=source_file,
@@ -285,7 +339,7 @@ def _extract_from_file(filepath: Path, source_root: Path) -> list[ModReference]:
         for m in _RE_GET_METHOD_INFO_SPECIAL.finditer(line):
             obj = _normalize_object(m.group(1))
             method_name = m.group(2)
-            cls = _resolve_class(obj, var_to_class, file_class)
+            cls = _resolve_class(obj, var_to_class, scope_map, lineno)
             refs.append(ModReference(
                 type=RefType.METHOD,
                 source_file=source_file,
@@ -301,7 +355,7 @@ def _extract_from_file(filepath: Path, source_root: Path) -> list[ModReference]:
             obj = _normalize_object(m.group(1))
             method_name = m.group(2)
             arg_count = int(m.group(3)) if m.group(3) else None
-            cls = _resolve_class(obj, var_to_class, file_class)
+            cls = _resolve_class(obj, var_to_class, scope_map, lineno)
             refs.append(ModReference(
                 type=RefType.METHOD,
                 source_file=source_file,
@@ -318,7 +372,7 @@ def _extract_from_file(filepath: Path, source_root: Path) -> list[ModReference]:
             obj = _normalize_object(m.group(1))
             method_name = m.group(2)
             arg_count = int(m.group(3)) if m.group(3) else None
-            cls = _resolve_class(obj, var_to_class, file_class)
+            cls = _resolve_class(obj, var_to_class, scope_map, lineno)
             refs.append(ModReference(
                 type=RefType.METHOD,
                 source_file=source_file,
@@ -334,7 +388,7 @@ def _extract_from_file(filepath: Path, source_root: Path) -> list[ModReference]:
         for m in _RE_GET_FIELD.finditer(line):
             obj = _normalize_object(m.group(1))
             field_name = m.group(2)
-            cls = _resolve_class(obj, var_to_class, file_class)
+            cls = _resolve_class(obj, var_to_class, scope_map, lineno)
             refs.append(ModReference(
                 type=RefType.FIELD,
                 source_file=source_file,
@@ -349,7 +403,7 @@ def _extract_from_file(filepath: Path, source_root: Path) -> list[ModReference]:
         for m in _RE_GET_PROPERTY.finditer(line):
             obj = _normalize_object(m.group(1))
             prop_name = m.group(2)
-            cls = _resolve_class(obj, var_to_class, file_class)
+            cls = _resolve_class(obj, var_to_class, scope_map, lineno)
             refs.append(ModReference(
                 type=RefType.PROPERTY,
                 source_file=source_file,
@@ -364,7 +418,7 @@ def _extract_from_file(filepath: Path, source_root: Path) -> list[ModReference]:
         for m in _RE_GET_NESTED_TYPE.finditer(line):
             obj = _normalize_object(m.group(1))
             nested_name = m.group(2)
-            cls = _resolve_class(obj, var_to_class, file_class)
+            cls = _resolve_class(obj, var_to_class, scope_map, lineno)
             refs.append(ModReference(
                 type=RefType.NESTED_TYPE,
                 source_file=source_file,
@@ -379,7 +433,7 @@ def _extract_from_file(filepath: Path, source_root: Path) -> list[ModReference]:
         for m in _RE_GET_PARENT.finditer(line):
             obj = _normalize_object(m.group(1))
             parent_name = m.group(2)
-            cls = _resolve_class(obj, var_to_class, file_class)
+            cls = _resolve_class(obj, var_to_class, scope_map, lineno)
             refs.append(ModReference(
                 type=RefType.PARENT_CLASS,
                 source_file=source_file,
@@ -396,14 +450,15 @@ def _extract_from_file(filepath: Path, source_root: Path) -> list[ModReference]:
 def _resolve_class(
     obj: str,
     var_to_class: dict[str, tuple[str, str, str]],
-    file_class: tuple[str, str, str] | None,
+    scope_map: dict[int, tuple[str, str, str]],
+    current_line: int,
 ) -> tuple[str, str, str] | None:
     """Resolve an object expression to (assembly, namespace, class_name).
 
-    - 'get_class_helper()' → file_class
+    - 'get_class_helper()' → class helper in the same C++ scope
     - known variable name → var_to_class[name]
     - otherwise → None
     """
     if obj == 'get_class_helper()':
-        return file_class
+        return scope_map.get(current_line)
     return var_to_class.get(obj)

@@ -123,6 +123,57 @@ def _lookup_class(ref: ModReference, index: DumpIndex) -> object | None:
     return index.by_qualified_name.get(key)
 
 
+# Well-known Unity/System base class members that are always available at
+# runtime via IL2CPP but may not appear on derived classes in the dump.
+_UNITY_BASE_MEMBERS = {
+    # UnityEngine.Object
+    "name", "hideFlags",
+    # UnityEngine.Component / MonoBehaviour
+    "enabled", "transform", "gameObject", "tag", "isActiveAndEnabled",
+}
+
+
+def _has_member_in_hierarchy(
+    dc,
+    member_name: str,
+    member_type: str,
+    index: DumpIndex,
+    visited: set | None = None,
+) -> bool:
+    """Check if *member_name* exists on *dc* or any of its parents.
+
+    member_type is one of 'method', 'field', 'property'.
+    Walks the inheritance chain up to 10 levels to avoid infinite loops.
+    """
+    if visited is None:
+        visited = set()
+    # Prevent cycles
+    key = (dc.assembly, dc.namespace, dc.name)
+    if key in visited:
+        return False
+    visited.add(key)
+    if len(visited) > 10:
+        return False
+
+    # Check the class itself
+    if member_type == 'method' and member_name in dc.methods:
+        return True
+    if member_type == 'field' and member_name in dc.fields:
+        return True
+    if member_type == 'property' and member_name in dc.properties:
+        return True
+
+    # Walk parents
+    for parent_name in dc.parents:
+        # Try to find parent class in the index by name
+        parent_candidates = index.by_class_name.get(parent_name, [])
+        for parent_dc in parent_candidates:
+            if _has_member_in_hierarchy(parent_dc, member_name, member_type, index, visited):
+                return True
+
+    return False
+
+
 def _validate_method(ref: ModReference, index: DumpIndex, issues: list[Issue]) -> None:
     if ref.class_name is None:
         return
@@ -132,6 +183,9 @@ def _validate_method(ref: ModReference, index: DumpIndex, issues: list[Issue]) -
         return
     method_name = ref.member_name
     if method_name not in dc.methods:
+        # Check inheritance chain before reporting
+        if _has_member_in_hierarchy(dc, method_name, 'method', index):
+            return
         issues.append(Issue(
             severity=Severity.MISSING,
             ref=ref,
@@ -163,6 +217,12 @@ def _validate_field(ref: ModReference, index: DumpIndex, issues: list[Issue]) ->
     if dc is None:
         return
     if ref.member_name not in dc.fields:
+        # Check inheritance chain before reporting
+        if _has_member_in_hierarchy(dc, ref.member_name, 'field', index):
+            return
+        # Check well-known Unity base members
+        if ref.member_name in _UNITY_BASE_MEMBERS:
+            return
         issues.append(Issue(
             severity=Severity.MISSING,
             ref=ref,
@@ -180,6 +240,12 @@ def _validate_property(ref: ModReference, index: DumpIndex, issues: list[Issue])
     if dc is None:
         return
     if ref.member_name not in dc.properties:
+        # Check inheritance chain before reporting
+        if _has_member_in_hierarchy(dc, ref.member_name, 'property', index):
+            return
+        # Check well-known Unity base members
+        if ref.member_name in _UNITY_BASE_MEMBERS:
+            return
         issues.append(Issue(
             severity=Severity.MISSING,
             ref=ref,

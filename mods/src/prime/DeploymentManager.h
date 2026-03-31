@@ -32,7 +32,7 @@ public:
   private:
     static IL2CppClassHelper& get_class_helper()
     {
-      static auto class_helper = DeploymentService::get_class_helper().GetNestedType("<PlanCourse>d__134");
+      static auto class_helper = DeploymentService::get_class_helper().GetNestedType("<PlanCourse>d__118");
       return class_helper;
     }
   };

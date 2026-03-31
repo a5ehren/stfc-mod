@@ -35,7 +35,7 @@ _MODIFIERS = r'(?:(?:public|private|protected|internal|sealed|abstract|static|pa
 _RE_CLASS_DECL = re.compile(
     r'^' + _MODIFIERS + r'(?:class|struct|interface|enum)\s+'
     r'([^\s:({]+(?:<[^>]*(?:<[^>]*>[^>]*)*>)?[^\s:({]*)'  # class name with optional generics
-    r'(?:\s*(?::|where)[^/]*)?'                             # optional : base or where constraints
+    r'(?:\s*:\s*([^/{]*))?'                                 # optional : base list (captured)
     r'(?:\s*//\s*TypeDefIndex:\s*(\d+))?'                  # optional TypeDefIndex comment
 )
 
@@ -99,6 +99,50 @@ def _convert_generic_name(name: str) -> str:
         elif ch == ',' and depth == 0:
             count += 1
     return f'{base}`{count}'
+
+
+def _parse_base_list(bases_str: str) -> list[str]:
+    """Parse a comma-separated list of base classes/interfaces, stripping generics.
+
+    Input:  'CanvasContext, IFleetsContext, IReactiveObservable'
+    Output: ['CanvasContext', 'IFleetsContext', 'IReactiveObservable']
+
+    Handles generic types like 'Widget<BattleTargetData>' → 'Widget`1'
+    and nested generics. Strips 'where' clauses.
+    """
+    # Remove anything after 'where' (generic constraints)
+    where_idx = bases_str.find(' where ')
+    if where_idx >= 0:
+        bases_str = bases_str[:where_idx]
+
+    # Split on commas, respecting generic nesting
+    parts: list[str] = []
+    depth = 0
+    current: list[str] = []
+    for ch in bases_str:
+        if ch in '<(':
+            depth += 1
+            current.append(ch)
+        elif ch in '>)':
+            depth -= 1
+            current.append(ch)
+        elif ch == ',' and depth == 0:
+            parts.append(''.join(current).strip())
+            current = []
+        else:
+            current.append(ch)
+    if current:
+        parts.append(''.join(current).strip())
+
+    result: list[str] = []
+    for part in parts:
+        part = part.strip()
+        if not part:
+            continue
+        # Convert generic syntax to backtick-arity
+        converted = _convert_generic_name(part)
+        result.append(converted)
+    return result
 
 
 def _parse_image_manifest(line: str) -> tuple[str, int] | None:
@@ -293,7 +337,8 @@ def parse_dump(dump_path: Path) -> DumpIndex:
                 m_cls = _RE_CLASS_DECL.match(line)
                 if m_cls:
                     raw_name = m_cls.group(1).strip()
-                    typedef_str = m_cls.group(2)
+                    bases_str = m_cls.group(2)
+                    typedef_str = m_cls.group(3)
                     typedef_idx = int(typedef_str) if typedef_str else -1
 
                     # Determine assembly from TypeDefIndex
@@ -306,11 +351,17 @@ def parse_dump(dump_path: Path) -> DumpIndex:
                     # Convert generic syntax to backtick-arity
                     class_name_converted = _convert_generic_name(raw_name)
 
+                    # Parse parent/interface names from the base list
+                    parent_names: list[str] = []
+                    if bases_str:
+                        parent_names = _parse_base_list(bases_str.strip())
+
                     # Create the DumpClass
                     dc = DumpClass(
                         assembly=assembly,
                         namespace=current_namespace,
                         name=class_name_converted,
+                        parents=parent_names,
                     )
                     current_dc = dc
 

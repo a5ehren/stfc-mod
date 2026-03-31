@@ -1,0 +1,30 @@
+CompileFlags:
+  CompilationDatabase: .
+  Add:
+    - -ferror-limit=0
+    - -Wno-unknown-warning-option
+  Remove:
+    - -flto=thin
+    - -flto
+
+Diagnostics:
+  UnusedIncludes: Strict
+  ClangTidy:
+    Add:
+      - bugprone-*
+      - modernize-*
+      - performance-*
+      - readability-redundant-*
+      - misc-unused-*
+    Remove:
+      - modernize-use-trailing-return-type
+      - modernize-avoid-c-arrays
+      - bugprone-easily-swappable-parameters
+
+InlayHints:
+  Enabled: Yes
+  ParameterNames: Yes
+  DeducedTypes: Yes
+
+Hover:
+  ShowAKA: Yes

@@ -181,40 +181,55 @@ class GameFiles:
 
 
 def locate_game_files(game_dir: Path) -> GameFiles:
-    errors: list[Exception] = []
+    """Locate GameAssembly, global-metadata.dat, and globalgamemanagers.
 
-    match sys.platform:
-        case "darwin":
-            assembly = game_dir / "Contents" / "Frameworks" / "GameAssembly.dylib"
-            data_dir = game_dir / "Contents" / "Resources" / "Data"
-        case "win32":
-            assembly = game_dir / "GameAssembly.dll"
+    Detection is file-based: probes for .dylib (macOS .app bundle), .dll
+    (Windows), and .so (Linux) layouts so that any platform's files can be
+    processed on any host OS.
+    """
+    errors: list[Exception] = []
+    assembly: Path | None = None
+    data_dir: Path | None = None
+
+    # macOS .app bundle layout
+    dylib = game_dir / "Contents" / "Frameworks" / "GameAssembly.dylib"
+    if dylib.exists():
+        assembly = dylib
+        data_dir = game_dir / "Contents" / "Resources" / "Data"
+
+    # Windows / Linux flat layout (.dll or .so next to *_Data/)
+    if assembly is None:
+        for ext in ("dll", "so"):
+            candidate = game_dir / f"GameAssembly.{ext}"
+            if candidate.exists():
+                assembly = candidate
+                break
+
+        if assembly is not None:
             data_dirs = sorted(game_dir.glob("*_Data"))
             match data_dirs:
                 case [single]:
                     data_dir = single
                 case []:
                     errors.append(FileNotFoundError("No *_Data directory found in game root"))
-                    data_dir = Path()
                 case multiple:
                     names = ", ".join(d.name for d in multiple)
                     errors.append(FileNotFoundError(f"Multiple *_Data directories found: {names}"))
-                    data_dir = Path()
-        case _:
-            assembly = game_dir / "GameAssembly.so"
-            data_dirs = sorted(game_dir.glob("*_Data"))
-            match data_dirs:
-                case [single]:
-                    data_dir = single
-                case _:
-                    errors.append(FileNotFoundError("Could not determine *_Data directory"))
-                    data_dir = Path()
 
+    if assembly is None:
+        errors.append(FileNotFoundError(
+            f"GameAssembly not found — looked for .dylib, .dll, and .so in {game_dir}"
+        ))
+    if data_dir is None and not errors:
+        errors.append(FileNotFoundError("Could not determine data directory"))
+
+    if errors:
+        raise ExceptionGroup("Missing game files", errors)
+
+    assert assembly is not None and data_dir is not None
     metadata = data_dir / "il2cpp_data" / "Metadata" / "global-metadata.dat"
     ggm = data_dir / "globalgamemanagers"
 
-    if not assembly.exists():
-        errors.append(FileNotFoundError(f"Game assembly not found: {assembly}"))
     if not metadata.exists():
         errors.append(FileNotFoundError(f"Metadata not found: {metadata}"))
     if not ggm.exists():

@@ -44,6 +44,7 @@ class DumpClass:
     fields: dict[str, str] = field(default_factory=dict)              # field_name → cs_type
     properties: list[str] = field(default_factory=list)              # property names
     nested_types: list[str] = field(default_factory=list)            # nested type names
+    parents: list[str] = field(default_factory=list)                 # parent/interface names
 
 
 @dataclass(slots=True)
