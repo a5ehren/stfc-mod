@@ -108,18 +108,22 @@ void NavigationZoom_Update_Hook(auto original, NavigationZoom *_this)
         _this->_zoomDelta     = zoomDelta;
         _this->_lastZoomDelta = zoomDelta;
       }
-      auto worldPos      = GetMouseWorldPos(_this->_sceneCamera, &mousePos);
-      _this->_worldPoint = worldPos;
-      _this->ZoomCameraAtWorldPoint();
+      if (_this->_sceneCamera != nullptr) {
+        auto worldPos      = GetMouseWorldPos(_this->_sceneCamera, &mousePos);
+        _this->_worldPoint = worldPos;
+        _this->ZoomCameraAtWorldPoint();
+      }
     } else if (MapKey::IsPressed(GameFunction::ZoomOut) && !Key::IsInputFocused()) {
       vec3 mousePos;
       GetMousePosition(&mousePos);
       _this->_zoomLocation  = vec2{.x = mousePos.x, .y = mousePos.y};
       _this->_zoomDelta     = -1.0f * zoomDelta;
       _this->_lastZoomDelta = -1.0f * zoomDelta;
-      auto worldPos         = GetMouseWorldPos(_this->_sceneCamera, &mousePos);
-      _this->_worldPoint    = worldPos;
-      _this->ZoomCameraAtWorldPoint();
+      if (_this->_sceneCamera != nullptr) {
+        auto worldPos         = GetMouseWorldPos(_this->_sceneCamera, &mousePos);
+        _this->_worldPoint    = worldPos;
+        _this->ZoomCameraAtWorldPoint();
+      }
     }
   }
 
@@ -138,10 +142,14 @@ void NavigationZoom_SetViewParameters_Hook(auto original, NavigationZoom *_this,
     auto ratio                     = (Config::Get().zoom / radius);
     _this->_farRatioSystemNormal   = 0.55f * ratio;
     _this->_farRatioSystemExtended = 1 * ratio;
-    _this->_sceneCamera->farClipPlane = Config::Get().zoom * 3.75f;
+    if (_this->_sceneCamera != nullptr) {
+      _this->_sceneCamera->farClipPlane = Config::Get().zoom * 3.75f;
+    }
     original(_this, radius, depth);
-    _this->_sceneCamera->farClipPlane = Config::Get().zoom * 3.75f;
-    do_default_zoom                   = true;
+    if (_this->_sceneCamera != nullptr) {
+      _this->_sceneCamera->farClipPlane = Config::Get().zoom * 3.75f;
+    }
+    do_default_zoom = true;
   } else {
     original(_this, radius, depth);
   }
@@ -150,13 +158,17 @@ void NavigationZoom_SetViewParameters_Hook(auto original, NavigationZoom *_this,
 void NavigationZoom_SetDepth_Hook(auto original, NavigationZoom *_this, NodeDepth depth)
 {
   if (depth == NodeDepth::SolarSystem) {
-    auto ratio                        = (Config::Get().zoom / _this->_viewRadius);
-    _this->_farRatioSystemNormal      = 0.55f * ratio;
-    _this->_farRatioSystemExtended    = 1 * ratio;
-    _this->_sceneCamera->farClipPlane = Config::Get().zoom * 3.75f;
+    auto ratio                     = (Config::Get().zoom / _this->_viewRadius);
+    _this->_farRatioSystemNormal   = 0.55f * ratio;
+    _this->_farRatioSystemExtended = 1 * ratio;
+    if (_this->_sceneCamera != nullptr) {
+      _this->_sceneCamera->farClipPlane = Config::Get().zoom * 3.75f;
+    }
     original(_this, depth);
-    _this->_sceneCamera->farClipPlane = Config::Get().zoom * 3.75f;
-    do_default_zoom                   = true;
+    if (_this->_sceneCamera != nullptr) {
+      _this->_sceneCamera->farClipPlane = Config::Get().zoom * 3.75f;
+    }
+    do_default_zoom = true;
   } else {
     original(_this, depth);
   }
