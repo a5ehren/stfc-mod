@@ -17,7 +17,7 @@ private:
 public:
   void* __get__armadaButton()
   {
-    static auto field = get_class_helper().GetProperty("_armadaButton");
-    return field.GetRaw<void*>(this);
+    static auto field = get_class_helper().GetField("_armadaButton").offset();
+    return *(void**)((char*)this + field);
   }
 };

@@ -20,7 +20,10 @@ public:
                       put = __set__farMagRadiusRatioSystemNormal)) float _farMagRadiusRatioSystemNormal;
   __declspec(property(get = __get__farMagRadiusRatioSystemExtended,
                       put = __set__farMagRadiusRatioSystemExtended)) float _farMagRadiusRatioSystemExtended;
-  __declspec(property(get = __get__nearMagRadiusRatioSystem)) float _nearMagRadiusRatioSystem;
+  __declspec(property(get = __get__nearMagRadiusRatioSystemNormal,
+                      put = __set__nearMagRadiusRatioSystemNormal)) float _nearMagRadiusRatioSystemNormal;
+  __declspec(property(get = __get__nearMagRadiusRatioSystemExtended,
+                      put = __set__nearMagRadiusRatioSystemExtended)) float _nearMagRadiusRatioSystemExtended;
 
   void MoveCamera(vec2 delta, bool isMomentum = false)
   {
@@ -83,10 +86,28 @@ public:
     *(float*)((ptrdiff_t)this + field) = v;
   }
 
-  float __get__nearMagRadiusRatioSystem()
+  float __get__nearMagRadiusRatioSystemNormal()
   {
-    static auto field = get_class_helper().GetField("_nearMagRadiusRatioSystem");
-    return *(float*)((ptrdiff_t)this + field.offset());
+    static auto field = get_class_helper().GetField("_nearMagRadiusRatioSystemNormal").offset();
+    return *(float*)((ptrdiff_t)this + field);
+  }
+
+  void __set__nearMagRadiusRatioSystemNormal(float v)
+  {
+    static auto field                  = get_class_helper().GetField("_nearMagRadiusRatioSystemNormal").offset();
+    *(float*)((ptrdiff_t)this + field) = v;
+  }
+
+  float __get__nearMagRadiusRatioSystemExtended()
+  {
+    static auto field = get_class_helper().GetField("_nearMagRadiusRatioSystemExtended").offset();
+    return *(float*)((ptrdiff_t)this + field);
+  }
+
+  void __set__nearMagRadiusRatioSystemExtended(float v)
+  {
+    static auto field                  = get_class_helper().GetField("_nearMagRadiusRatioSystemExtended").offset();
+    *(float*)((ptrdiff_t)this + field) = v;
   }
 
   // void __set__lastDelta(int depth) {

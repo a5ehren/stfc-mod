@@ -10,7 +10,7 @@ class ShopSummaryDirector
 {
 public:
   __declspec(property(get = __get__backLogicSkipSectionIds)) Il2CppArraySize* _backLogicSkipSectionIds;
-  __declspec(property(get = __get_backlogicCache)) Il2CppArraySize* backlogicCache;
+  __declspec(property(get = __get__backlogicCache)) Il2CppArraySize* _backlogicCache;
 
 private:
   static IL2CppClassHelper& get_class_helper()
@@ -26,9 +26,9 @@ public:
     return *(Il2CppArraySize**)((char*)this + field);
   }
 
-  Il2CppArraySize* __get_backlogicCache()
+  Il2CppArraySize* __get__backlogicCache()
   {
-    static auto field = get_class_helper().GetField("backlogicCache").offset();
+    static auto field = get_class_helper().GetField("_backlogicCache").offset();
     return *(Il2CppArraySize**)((char*)this + field);
   }
 };
