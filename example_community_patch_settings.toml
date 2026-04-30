@@ -355,6 +355,7 @@ auto_confirm_discovery = true
 
 [loading_screen]
 # Enable custom loading screen background
+# This feature currently does not work on macOS.
 # Set to true to use a custom image for the loading screen
 custom_enabled = true
 

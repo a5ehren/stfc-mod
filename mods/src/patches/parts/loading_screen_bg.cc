@@ -452,6 +452,11 @@ void LoginSequence_Awake_Hook(auto original, void* _this)
 
 void InstallLoadingScreenBgHooks()
 {
+#if __APPLE__
+  spdlog::info("[LS] Loading screen background hooks skipped on Apple platforms");
+  return;
+#endif
+
   const auto& cfg = Config::Get();
   auto tv_h = il2cpp_get_class_helper("Assembly-CSharp", "Digit.Prime.LoadingScreen", "TransitionViewController");
   auto tm_h = il2cpp_get_class_helper("Assembly-CSharp", "Digit.Prime.LoadingScreen", "TransitionManager");
