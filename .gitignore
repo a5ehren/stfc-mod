@@ -16,7 +16,14 @@ debug.log
 /.xmake/
 /vsxmake*/
 .DS_Store
+*__pycache__*
+tools/*
+dump/*
+docs/superpowers/*
 
 # Generated Info.plist files (generated from templates)
 **/Info.plist
 mods/.xmake
+
+# Generated IL2CPP dump parser cache
+*.dump-index-cache.pkl
