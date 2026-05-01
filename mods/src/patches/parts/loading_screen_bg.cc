@@ -7,6 +7,7 @@
 #if _WIN32
 #include <Windows.h>
 #endif
+#include <cstring>
 #include <filesystem>
 #include <fstream>
 #include <vector>
@@ -24,6 +25,49 @@ static void* g_bgImageComp          = nullptr;
 static void* g_ourSprite            = nullptr;
 static void* g_bgRectTransform      = nullptr;
 
+static Il2CppObject* InvokeRuntime(const MethodInfo* method, void* target, void** args, const char* name)
+{
+  if (!method) return nullptr;
+  Il2CppException* exception = nullptr;
+  Il2CppObject*    result    = il2cpp_runtime_invoke(method, target, args, &exception);
+  if (exception) {
+    spdlog::warn("[LS] {} invocation failed", name);
+    return nullptr;
+  }
+  return result;
+}
+
+static bool InvokeVoid(const MethodInfo* method, void* target, void** args, const char* name)
+{
+  if (!method) return false;
+  Il2CppException* exception = nullptr;
+  il2cpp_runtime_invoke(method, target, args, &exception);
+  if (exception) {
+    spdlog::warn("[LS] {} invocation failed", name);
+    return false;
+  }
+  return true;
+}
+
+static bool InvokeBool(const MethodInfo* method, void* target, void** args, const char* name)
+{
+  Il2CppObject* result = InvokeRuntime(method, target, args, name);
+  if (!result) return false;
+  return *reinterpret_cast<bool*>(il2cpp_object_unbox(result));
+}
+
+static int32_t InvokeInt32(const MethodInfo* method, void* target, int32_t fallback, const char* name)
+{
+  Il2CppObject* result = InvokeRuntime(method, target, nullptr, name);
+  if (!result) return fallback;
+  return *reinterpret_cast<int32_t*>(il2cpp_object_unbox(result));
+}
+
+static void* InvokeObject(const MethodInfo* method, void* target, void** args, const char* name)
+{
+  return InvokeRuntime(method, target, args, name);
+}
+
 static void ReadIl2CppString(void* strObj, char* buf, int bufSize)
 {
   buf[0] = '\0';
@@ -39,17 +83,28 @@ static void* LoadTextureFromBytes(const std::vector<uint8_t>& data)
   if (data.empty()) return nullptr;
   static auto tex_h   = il2cpp_get_class_helper("UnityEngine.CoreModule", "UnityEngine", "Texture2D");
   static auto conv_h  = il2cpp_get_class_helper("UnityEngine.ImageConversionModule", "UnityEngine", "ImageConversion");
-  static auto fn_load = conv_h.GetMethod("LoadImage", 2);
+  static auto fn_load = conv_h.GetMethodInfoSpecial("LoadImage", [](int param_count, const Il2CppType** param) {
+    return param_count == 3 && param[1]->type == IL2CPP_TYPE_SZARRAY && param[2]->type == IL2CPP_TYPE_BOOLEAN;
+  });
   if (!tex_h.isValidHelper() || !fn_load) return nullptr;
   static auto byte_h = il2cpp_get_class_helper("mscorlib", "System", "Byte");
   Il2CppArray* arr = il2cpp_array_new(byte_h.get_cls(), data.size());
   if (!arr) return nullptr;
-  memcpy(((Il2CppArraySize*)arr)->vector, data.data(), data.size());
+  std::memcpy(((Il2CppArraySize*)arr)->vector, data.data(), data.size());
   void* tex = il2cpp_object_new(tex_h.get_cls());
   if (!tex) return nullptr;
-  static auto ctor = tex_h.GetMethod(".ctor", 4);
-  if (ctor) reinterpret_cast<void(*)(void*, int, int, int, bool)>(ctor)(tex, 2, 2, 4, false);
-  return reinterpret_cast<void*(*)(void*, void*, bool)>(fn_load)(tex, arr, false) ? tex : nullptr;
+  static auto ctor = tex_h.GetMethodInfoSpecial(".ctor", [](int param_count, const Il2CppType** param) {
+    return param_count == 4 && param[3]->type == IL2CPP_TYPE_BOOLEAN;
+  });
+  if (ctor) {
+    int32_t width = 2, height = 2, textureFormat = 4;
+    bool    mipChain = false;
+    void*   ctorArgs[4] = {&width, &height, &textureFormat, &mipChain};
+    if (!InvokeVoid(ctor, tex, ctorArgs, "Texture2D.ctor")) return nullptr;
+  }
+  bool  markNonReadable = false;
+  void* loadArgs[3]     = {tex, arr, &markNonReadable};
+  return InvokeBool(fn_load, nullptr, loadArgs, "ImageConversion.LoadImage") ? tex : nullptr;
 }
 
 static void EnsureTextureLoaded()
@@ -64,6 +119,8 @@ static void EnsureTextureLoaded()
   if (data.empty())
     data.assign(g_embeddedLoadingImage, g_embeddedLoadingImage + g_embeddedLoadingImage_SIZE);
   g_customLoadingTexture = LoadTextureFromBytes(data);
+  if (!g_customLoadingTexture)
+    spdlog::warn("[LS] failed to load loading screen image texture");
 }
 
 // Applies g_customLoadingTexture as a sprite to imageComp.
@@ -74,30 +131,38 @@ static void ApplySpriteToImage(void* imageComp, void** outSprite = nullptr)
   static auto tex_h  = il2cpp_get_class_helper("UnityEngine.CoreModule", "UnityEngine", "Texture2D");
   static auto spr_h  = il2cpp_get_class_helper("UnityEngine.CoreModule", "UnityEngine", "Sprite");
   static auto img_h  = il2cpp_get_class_helper("UnityEngine.UI", "UnityEngine.UI", "Image");
-  static auto fn_w   = tex_h.GetMethod("get_width");
-  static auto fn_ht  = tex_h.GetMethod("get_height");
-  static auto fn_cre = spr_h.GetMethod("Create", 3);
-  static auto fn_spr = img_h.GetMethod("set_sprite");
-  static auto fn_ovr = img_h.GetMethod("set_overrideSprite");
-  static auto fn_col = img_h.GetMethod("set_color");
-  static auto fn_typ = img_h.GetMethod("set_type");
-  static auto fn_asp = img_h.GetMethod("set_preserveAspect");
-  static auto fn_drt = img_h.GetMethod("SetVerticesDirty");
+  static auto fn_w   = tex_h.GetMethodInfo("get_width");
+  static auto fn_ht  = tex_h.GetMethodInfo("get_height");
+  static auto fn_cre = spr_h.GetMethodInfo("Create", 3);
+  static auto fn_spr = img_h.GetMethodInfo("set_sprite");
+  static auto fn_ovr = img_h.GetMethodInfo("set_overrideSprite");
+  static auto fn_col = img_h.GetMethodInfo("set_color");
+  static auto fn_typ = img_h.GetMethodInfo("set_type");
+  static auto fn_asp = img_h.GetMethodInfo("set_preserveAspect");
+  static auto fn_drt = img_h.GetMethodInfo("SetVerticesDirty");
 
   if (!fn_cre) return;
-  int32_t tw = fn_w  ? reinterpret_cast<int32_t(*)(void*)>(fn_w)(g_customLoadingTexture)  : 792;
-  int32_t th = fn_ht ? reinterpret_cast<int32_t(*)(void*)>(fn_ht)(g_customLoadingTexture) : 450;
+  int32_t tw = InvokeInt32(fn_w, g_customLoadingTexture, 792, "Texture2D.get_width");
+  int32_t th = InvokeInt32(fn_ht, g_customLoadingTexture, 450, "Texture2D.get_height");
   FakeRect    rect {0.0f, 0.0f, (float)tw, (float)th};
   FakeVector2 pivot{0.5f, 0.5f};
-  void* spr = reinterpret_cast<void*(*)(void*, void*, void*)>(fn_cre)(g_customLoadingTexture, &rect, &pivot);
+  void*       createArgs[3] = {g_customLoadingTexture, &rect, &pivot};
+  void* spr = InvokeObject(fn_cre, nullptr, createArgs, "Sprite.Create");
   if (!spr) return;
   if (outSprite) *outSprite = spr;
-  if (fn_ovr) reinterpret_cast<void(*)(void*, void*)>(fn_ovr)(imageComp, spr);
-  if (fn_spr) reinterpret_cast<void(*)(void*, void*)>(fn_spr)(imageComp, spr);
-  if (fn_col) { FakeColor wh{1,1,1,1}; reinterpret_cast<void(*)(void*, void*)>(fn_col)(imageComp, &wh); }
-  if (fn_typ) reinterpret_cast<void(*)(void*, int32_t)>(fn_typ)(imageComp, 0);
-  if (fn_asp) reinterpret_cast<void(*)(void*, bool)>(fn_asp)(imageComp, false);
-  if (fn_drt) reinterpret_cast<void(*)(void*)>(fn_drt)(imageComp);
+  void* spriteArgs[1] = {spr};
+  InvokeVoid(fn_ovr, imageComp, spriteArgs, "Image.set_overrideSprite");
+  InvokeVoid(fn_spr, imageComp, spriteArgs, "Image.set_sprite");
+  FakeColor wh{1,1,1,1};
+  void*     colorArgs[1] = {&wh};
+  InvokeVoid(fn_col, imageComp, colorArgs, "Image.set_color");
+  int32_t imageType = 0;
+  void*   typeArgs[1] = {&imageType};
+  InvokeVoid(fn_typ, imageComp, typeArgs, "Image.set_type");
+  bool  preserveAspect = false;
+  void* aspectArgs[1] = {&preserveAspect};
+  InvokeVoid(fn_asp, imageComp, aspectArgs, "Image.set_preserveAspect");
+  InvokeVoid(fn_drt, imageComp, nullptr, "Graphic.SetVerticesDirty");
 }
 
 // Finds the BG Image component on a TransitionViewController instance, applies the
@@ -157,22 +222,31 @@ static void ApplyCustomSpriteToBGImage(void* _this)
     // RectTransform setters take Vector2 by value (8 bytes in a single register).
     if (g_bgRectTransform) {
       static auto rt_h   = il2cpp_get_class_helper("UnityEngine.CoreModule", "UnityEngine", "RectTransform");
-      static auto fn_am  = rt_h.GetMethod("set_anchorMin");
-      static auto fn_ax  = rt_h.GetMethod("set_anchorMax");
-      static auto fn_sd  = rt_h.GetMethod("set_sizeDelta");
-      static auto fn_ap  = rt_h.GetMethod("set_anchoredPosition");
+      static auto fn_am  = rt_h.GetMethodInfo("set_anchorMin");
+      static auto fn_ax  = rt_h.GetMethodInfo("set_anchorMax");
+      static auto fn_sd  = rt_h.GetMethodInfo("set_sizeDelta");
+      static auto fn_ap  = rt_h.GetMethodInfo("set_anchoredPosition");
       if (fn_am && fn_ax && fn_sd && fn_ap) {
         FakeVector2 z{0,0}, o{1,1};
-        reinterpret_cast<void(*)(void*, FakeVector2, void*)>(fn_am)(g_bgRectTransform, z, nullptr);
-        reinterpret_cast<void(*)(void*, FakeVector2, void*)>(fn_ax)(g_bgRectTransform, o, nullptr);
-        reinterpret_cast<void(*)(void*, FakeVector2, void*)>(fn_sd)(g_bgRectTransform, z, nullptr);
-        reinterpret_cast<void(*)(void*, FakeVector2, void*)>(fn_ap)(g_bgRectTransform, z, nullptr);
+        void* zeroArgs[1] = {&z};
+        void* oneArgs[1]  = {&o};
+        InvokeVoid(fn_am, g_bgRectTransform, zeroArgs, "RectTransform.set_anchorMin");
+        InvokeVoid(fn_ax, g_bgRectTransform, oneArgs, "RectTransform.set_anchorMax");
+        InvokeVoid(fn_sd, g_bgRectTransform, zeroArgs, "RectTransform.set_sizeDelta");
+        InvokeVoid(fn_ap, g_bgRectTransform, zeroArgs, "RectTransform.set_anchoredPosition");
       }
-      // Vector3 setters take by pointer under MSVC x64 ABI.
-      static auto fn_eu = tr_h.GetMethod("set_localEulerAngles");
-      if (fn_eu) { FakeVector3 z{0,0,0}; reinterpret_cast<void(*)(void*, void*, void*)>(fn_eu)(g_bgRectTransform, &z, nullptr); }
-      static auto fn_sc = tr_h.GetMethod("set_localScale");
-      if (fn_sc) { FakeVector3 o{1,1,1}; reinterpret_cast<void(*)(void*, void*, void*)>(fn_sc)(g_bgRectTransform, &o, nullptr); }
+      static auto fn_eu = tr_h.GetMethodInfo("set_localEulerAngles");
+      if (fn_eu) {
+        FakeVector3 z{0,0,0};
+        void*       args[1] = {&z};
+        InvokeVoid(fn_eu, g_bgRectTransform, args, "Transform.set_localEulerAngles");
+      }
+      static auto fn_sc = tr_h.GetMethodInfo("set_localScale");
+      if (fn_sc) {
+        FakeVector3 o{1,1,1};
+        void*       args[1] = {&o};
+        InvokeVoid(fn_sc, g_bgRectTransform, args, "Transform.set_localScale");
+      }
     }
 
     g_spriteApplied = true;
