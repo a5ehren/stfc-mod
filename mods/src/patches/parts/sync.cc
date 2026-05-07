@@ -2171,23 +2171,23 @@ void InstallSyncPatches()
     }
   }
 
+#if __APPLE__
+  // 1.000.49105: BuffService.ParseBinaryObject is a 0x18-byte body immediately before HandleResponseData.
+  // Spud's ARM64 absolute jump is larger than that, so detouring it overwrites the next function entry.
+  spdlog::info("Skipping BuffService hook lookup on macOS");
+#else
   if (auto buff_service =
           il2cpp_get_class_helper("Digit.Client.PrimeLib.Runtime", "Digit.PrimeServer.Services", "BuffService");
       !buff_service.isValidHelper()) {
     ErrorMsg::MissingHelper("Services", "BuffService");
   } else {
-#if __APPLE__
-    // 1.000.49105: BuffService.ParseBinaryObject is a 0x18-byte body immediately before HandleResponseData.
-    // Spud's ARM64 absolute jump is larger than that, so detouring it overwrites the next function entry.
-    spdlog::info("Skipping BuffService.ParseBinaryObject hook on macOS");
-#else
     if (auto *const ptr = buff_service.GetMethod("ParseBinaryObject"); ptr == nullptr) {
       ErrorMsg::MissingMethod("BuffService", "ParseBinaryObject");
     } else {
       SPUD_STATIC_DETOUR(ptr, DataContainer_ParseBinaryObject);
     }
-#endif
   }
+#endif
 
   if (auto inventory_data_container = il2cpp_get_class_helper("Digit.Client.PrimeLib.Runtime",
                                                               "Digit.PrimeServer.Services", "InventoryDataContainer");
