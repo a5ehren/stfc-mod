@@ -10,6 +10,7 @@
 #include <spdlog/spdlog.h>
 
 #include <algorithm>
+#include <cctype>
 #include <cstdio>
 #include <iostream>
 #include <ranges>
@@ -25,6 +26,7 @@ namespace DCBS = DefaultConfig::Buffs;
 namespace DCS = DefaultConfig::Sync;
 namespace DCSC = DefaultConfig::SystemConfig;
 namespace DCSH = DefaultConfig::Shortcuts;
+namespace DCUP = DefaultConfig::Updates;
 
 static const eastl::tuple<const char*, int> bannerTypes[] = {
     {"Standard", ToastState::Standard},
@@ -297,6 +299,19 @@ T get_config_or_default(toml::table& config, toml::table& new_config, std::strin
   }
 
   return (T)final_value;
+}
+
+std::string normalize_update_channel(std::string channel)
+{
+  channel = std::string(StripAsciiWhitespace(channel));
+  std::ranges::transform(channel, channel.begin(), [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+  if (channel == "prerelease") {
+    return channel;
+  }
+  if (channel != "stable") {
+    spdlog::warn("invalid config value updates.channel '{}', falling back to stable", channel);
+  }
+  return "stable";
 }
 
 void read_sync_targets(toml::table& config, toml::table& new_config,
@@ -663,6 +678,9 @@ void Config::Load()
       get_config_or_default<std::string>(config, parsed, "config", "settings_url", DCSC::settings_url, write_log);
   this->config_assets_url_override =
       get_config_or_default<std::string>(config, parsed, "config", "assets_url_override", DCSC::assets_url_override, write_log);
+  this->update_channel = normalize_update_channel(
+      get_config_or_default<std::string>(config, parsed, "updates", "channel", DCUP::channel, write_log));
+  parsed["updates"].as_table()->insert_or_assign("channel", this->update_channel);
 
   // Loading Screen Background settings
   this->loader_transition =

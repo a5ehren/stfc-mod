@@ -1,0 +1,86 @@
+name: Create Tagged Prerelease
+
+on:
+  push:
+    tags:
+      - "v*-pr.*"
+
+jobs:
+  create-tagged-prerelease:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      actions: read
+    name: Create Tagged Prerelease
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ github.ref }}
+
+      - name: Resolve tag target
+        id: tag-target
+        run: |
+          set -euo pipefail
+
+          target_sha=$(git rev-list -n 1 "$GITHUB_REF_NAME")
+          if [ -z "$target_sha" ]; then
+            echo "Unable to resolve tag target for $GITHUB_REF_NAME"
+            exit 1
+          fi
+
+          echo "target_sha=${target_sha}" >> "$GITHUB_OUTPUT"
+
+      - name: Wait for Build workflow
+        id: check-build
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TARGET_SHA: ${{ steps.tag-target.outputs.target_sha }}
+        run: |
+          set -euo pipefail
+
+          for attempt in $(seq 1 30); do
+            run_id=$(gh api \
+              -H "Accept: application/vnd.github+json" \
+              "/repos/${{ github.repository }}/actions/runs" \
+              --jq ".workflow_runs[] | select(.name==\"Build\" and .head_sha==\"${TARGET_SHA}\" and .conclusion==\"success\") | .id" \
+              | head -n 1)
+
+            if [ -n "$run_id" ]; then
+              echo "build_run_id=${run_id}" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+
+            echo "Build workflow for ${TARGET_SHA} has not completed successfully yet (${attempt}/30)."
+            sleep 20
+          done
+
+          echo "No successful Build workflow found for ${TARGET_SHA}."
+          exit 1
+
+      - name: Download artifacts from Build workflow
+        uses: dawidd6/action-download-artifact@v18
+        with:
+          run_id: ${{ steps.check-build.outputs.build_run_id }}
+
+      - name: Package Windows DLL
+        run: |
+          set -euo pipefail
+          (cd stfc-community-mod && zip -r - .) > stfc-community-mod.zip
+
+      - name: Create prerelease
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ github.ref_name }}
+          TARGET_SHA: ${{ steps.tag-target.outputs.target_sha }}
+        run: |
+          set -euo pipefail
+          gh release create "$TAG" \
+            stfc-community-mod.zip \
+            stfc-community-mod-installer/stfc-community-mod-installer.dmg#stfc-community-mod-installer.dmg \
+            --repo "${{ github.repository }}" \
+            --target "$TARGET_SHA" \
+            --title "$TAG" \
+            --notes "Tagged prerelease for ${TAG}." \
+            --prerelease

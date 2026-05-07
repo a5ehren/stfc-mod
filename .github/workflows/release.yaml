@@ -7,6 +7,7 @@ on:
 
 jobs:
   create-release:
+    if: ${{ !contains(github.ref_name, '-pr.') }}
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -51,8 +52,10 @@ jobs:
       - name: Check Prerelease
         id: check-prerelease
         run: |
-          if echo "${{ github.ref_name }}" | grep -Pq "^v[\d]+.[\d]+.[\d]+(?:\.(alpha|beta)\.[\d]+)?$"; then
+          if echo "${{ github.ref_name }}" | grep -Pq "^v[0-9]+\.[0-9]+\.[0-9]+\.(alpha|beta)\.[0-9]+$"; then
             echo "prerelease=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "prerelease=false" >> "$GITHUB_OUTPUT"
           fi
 
       # ✅ Step 5 — Create Release

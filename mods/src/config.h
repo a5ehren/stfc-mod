@@ -212,4 +212,7 @@ public:
   std::string loader_image;
 
   bool installLoadingScreenBgHooks;
+  
+  // Auto-update channel
+  std::string update_channel;
 };

@@ -13,6 +13,11 @@ namespace SystemConfig
   constexpr const char* settings_url        = "";
 } // namespace SystemConfig
 
+namespace Updates
+{
+  constexpr const char* channel = "stable";
+} // namespace Updates
+
 namespace Control
 {
   constexpr bool enable_experimental = false;

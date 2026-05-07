@@ -3,6 +3,7 @@
 #include <filesystem>
 
 #include "patches/patches.h"
+#include "self_update.h"
 
 void VersionDllInit();
 
@@ -25,6 +26,9 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID /*lpReserved*/)
 
       // Since we are replacing version.dll, need the proper forwards
       VersionDllInit();
+      if (StartPreLaunchSelfUpdate(hinstDLL)) {
+        return TRUE;
+      }
       ApplyPatches();
       break;
     case DLL_THREAD_ATTACH:

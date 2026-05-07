@@ -16,6 +16,7 @@ struct ActionView: View, XSollaUpdaterDelegate {
   @State private var updateProgress: Float = 0.0
   @State private var gameInstalled: Bool = false
   @State private var gameRunning: Bool = false
+  @State private var launcherUpdateChecked: Bool = false
   @State private var showErrorAlert: Bool = false
   @State private var errorMessage: String = ""
   private var model = PulsatingViewModel()
@@ -131,6 +132,11 @@ struct ActionView: View, XSollaUpdaterDelegate {
       .frame(width: geo.size.width, height: 150)
       .offset(x: 85, y: 20)
       .task {
+        if !launcherUpdateChecked {
+          launcherUpdateChecked = true
+          await GitHubUpdater().updateLauncherIfNeeded()
+        }
+
         repeat {
           gameVersion = gameUpdater.getInstalledGameVersion()
           gameInstalled = gameVersion > 0

@@ -23,6 +23,20 @@ There is a discord server with friendly, helpful people who will assist if you h
 
 This project is maintained solely at my own cost of time, energy and money. Any contributions and help are greatly welcomed.
 
+### Pre-release tags
+
+Pre-releases are not created automatically when PRs merge. To publish one, push an explicit tag in the form
+`vX.Y.Z-pr.N+SHORTSHA`, for example `v0.6.1-pr.42+abc1234`. `X.Y.Z` should match the release version, `N` should identify
+the pre-release attempt or source PR, and `SHORTSHA` should identify the target commit.
+
+```bash
+git tag v0.6.1-pr.42+abc1234 <commit>
+git push origin v0.6.1-pr.42+abc1234
+```
+
+Pushing that tag starts the tagged pre-release workflow. It waits for a successful Build workflow on the tagged commit, then
+creates a GitHub pre-release with the Windows ZIP and macOS DMG assets.
+
 ## Features
 
 - Set system UI scale + adjustment factor
