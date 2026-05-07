@@ -2018,11 +2018,19 @@ void HandleEntityGroup(EntityGroup* entity_group)
   }
 }
 
+#if __APPLE__
+void DataContainer_ParseBinaryObject(auto original, void* _this, EntityGroup* group)
+{
+  HandleEntityGroup(group);
+  return original(_this, group);
+}
+#else
 void DataContainer_ParseBinaryObject(auto original, void* _this, EntityGroup* group, bool isPlayerData)
 {
   HandleEntityGroup(group);
   return original(_this, group, isPlayerData);
 }
+#endif
 
 void DataContainer_ParseEntitySlotsData(auto original, void* _this, EntityGroup* group)
 {
@@ -2168,11 +2176,17 @@ void InstallSyncPatches()
       !buff_service.isValidHelper()) {
     ErrorMsg::MissingHelper("Services", "BuffService");
   } else {
+#if __APPLE__
+    // 1.000.49105: BuffService.ParseBinaryObject is a 0x18-byte body immediately before HandleResponseData.
+    // Spud's ARM64 absolute jump is larger than that, so detouring it overwrites the next function entry.
+    spdlog::info("Skipping BuffService.ParseBinaryObject hook on macOS");
+#else
     if (auto *const ptr = buff_service.GetMethod("ParseBinaryObject"); ptr == nullptr) {
       ErrorMsg::MissingMethod("BuffService", "ParseBinaryObject");
     } else {
       SPUD_STATIC_DETOUR(ptr, DataContainer_ParseBinaryObject);
     }
+#endif
   }
 
   if (auto inventory_data_container = il2cpp_get_class_helper("Digit.Client.PrimeLib.Runtime",
