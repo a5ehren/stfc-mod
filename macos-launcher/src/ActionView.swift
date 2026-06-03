@@ -22,8 +22,10 @@ struct ActionView: View, XSollaUpdaterDelegate {
 
   func updateProgress(progress: XsollaUpdateProgress) {
     switch progress {
-    case .Start(_):
-      break
+    case .Start(let totalActions):
+      updateAction = "Updating"
+      updateSubAction = "Planning"
+      updateProgress = totalActions > 0 ? 0.0 : 1.0
     case .Progress(let currentAction, let totalActions):
       updateAction = "Updating \(currentAction) of \(totalActions)"
       updateProgress = Float(currentAction) / Float(totalActions)
@@ -51,9 +53,9 @@ struct ActionView: View, XSollaUpdaterDelegate {
       updateSubAction = "Waiting"
       break
     case .ApplyVersion:
-      break
+      updateSubAction = "Applying Version"
     case .VersionApplied:
-      break
+      updateSubAction = "Version Applied"
     case .Finalizing:
       updateSubAction = "Finalizing"
       break
@@ -62,6 +64,7 @@ struct ActionView: View, XSollaUpdaterDelegate {
       break
     case .Complete:
       updateSubAction = "Complete"
+      updateProgress = 1.0
       break
     }
   }
@@ -86,12 +89,18 @@ struct ActionView: View, XSollaUpdaterDelegate {
                   if gameUpdateAvailable && !updating {
                     Task {
                       do {
+                        logger.info("User requested game update")
                         updating = true
                         updateAction = "Starting"
                         updateSubAction = "Planning"
                         try await gameUpdater.updateGame(delegate: self)
+                        logger.info("Game update finished successfully")
                       } catch {
                         logger.error("Error updating game: \(error.localizedDescription)")
+                        updateAction = "Update Failed"
+                        updateSubAction = "Failed"
+                        errorMessage = "Game update failed: \(error.localizedDescription)"
+                        showErrorAlert = true
                       }
                       updating = false
                       gameVersion = gameUpdater.getInstalledGameVersion()
