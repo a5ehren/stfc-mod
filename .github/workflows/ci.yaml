@@ -56,7 +56,7 @@ jobs:
         uses: xmake-io/github-action-setup-xmake@v1
         with:
           xmake-version: latest
-          package-cache: true
+          package-cache: false
           package-cache-key: ${{ hashFiles('**/xmake.lua', '!macos-*/xmake.lua') }}
 
       - name: Configure
@@ -87,7 +87,7 @@ jobs:
         uses: xmake-io/github-action-setup-xmake@v1
         with:
           xmake-version: latest
-          package-cache: true
+          package-cache: false
           package-cache-key: ${{ hashFiles('**/xmake.lua', '!win-*/xmake.lua') }}
 
       - name: Configure (arm64)
