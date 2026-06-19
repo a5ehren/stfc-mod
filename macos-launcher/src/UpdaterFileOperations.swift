@@ -6,7 +6,7 @@ private let fileOperationLogger = Logger(subsystem: "com.stfcmod.startrekpatch",
 func copyContentsOfDirectory(from sourceURL: URL, to targetURL: URL) throws {
   let fileManager = FileManager.default
 
-  try fileManager.createDirectory(at: targetURL, withIntermediateDirectories: true)
+  try fileManager.createDirectory(at: targetURL, withIntermediateDirectories: true, attributes: nil)
   let sourceContents = try fileManager.contentsOfDirectory(
     at: sourceURL, includingPropertiesForKeys: [.isSymbolicLinkKey, .isDirectoryKey])
 

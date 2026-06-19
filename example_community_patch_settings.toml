@@ -658,6 +658,13 @@ logging = false
 resolver_cache_ttl = "300"
 verify_ssl = true
 
+[combat_model]
+# Disabled by default. Enable only while collecting controlled PvE combat model fixtures.
+capture_enabled = false
+
+# Optional absolute output directory. If empty, captures are written beside the mod config.
+capture_dir = ""
+
 #  <[=========================================================================================================================================]>
 #
 #        ****                                                    *                                 *                      *           *

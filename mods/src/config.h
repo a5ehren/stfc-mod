@@ -185,6 +185,8 @@ public:
   bool       sync_logging;
   bool       sync_debug;
   int        sync_resolver_cache_ttl;
+  bool        combat_model_capture_enabled;
+  std::string combat_model_capture_dir;
   SyncConfig sync_options;
 
   std::map<std::string, SyncTargetConfig> sync_targets;

@@ -188,6 +188,12 @@ namespace Sync
   constexpr auto        resolver_cache_ttl = 300;
 } // namespace Sync
 
+namespace CombatModel
+{
+  constexpr bool        capture_enabled = false;
+  constexpr const char* capture_dir     = "";
+} // namespace CombatModel
+
 namespace UI
 {
   constexpr bool        always_skip_reveal_sequence = true;

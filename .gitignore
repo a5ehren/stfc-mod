@@ -17,7 +17,20 @@ debug.log
 /vsxmake*/
 .DS_Store
 /.localassets/*
+*__pycache__*
+tools/*
+dump/*
+docs/superpowers/*
 
 # Generated Info.plist files (generated from templates)
 **/Info.plist
 mods/.xmake
+
+# combat modeling reports
+reports/*
+fixtures/*
+battle_data/*
+bundle.js
+
+# Generated IL2CPP dump parser cache
+*.dump-index-cache.pkl

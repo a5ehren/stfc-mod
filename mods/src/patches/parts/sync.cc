@@ -1,4 +1,5 @@
 #include "config.h"
+#include "combat_model_capture.h"
 #include "errormsg.h"
 #include "file.h"
 #include "str_utils.h"
@@ -1784,6 +1785,7 @@ void ship_combat_log_data()
 
       try {
         battle_json = std::move(json::parse(battle_log));
+        combat_model_capture::CaptureBattleJournal(journal_id, battle_json);
       } catch (const json::exception& e) {
         spdlog::error("Error parsing journal response from game server: {}", e.what());
         continue;
@@ -1915,6 +1917,10 @@ void HandleEntityGroup(EntityGroup* entity_group)
 
   const auto byteCount = static_cast<size_t>(entity_group->Group->Length);
   const auto *bytesPtr = reinterpret_cast<const char*>(entity_group->Group->bytes->m_Items);
+
+  if (combat_model_capture::ShouldCaptureEntityGroup(entity_group->Type_)) {
+    combat_model_capture::CaptureEntityGroup(entity_group->Type_, std::string_view(bytesPtr, byteCount));
+  }
 
   // Helper to run processing asynchronously with exception handling
   auto submit_async = [bytesPtr, byteCount]<typename T>(T&& func) {

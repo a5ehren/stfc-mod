@@ -1,0 +1,28 @@
+approval_policy = "never"
+sandbox_mode = "workspace-write"
+[mcp_servers.maas_confluence]
+enabled = false
+
+[mcp_servers.maas_glean]
+enabled = false
+
+[mcp_servers.maas_google_drive]
+enabled = false
+
+[mcp_servers.maas_jira]
+enabled = false
+
+[mcp_servers.maas_nvbugs]
+enabled = false
+
+[mcp_servers.maas_outlook]
+enabled = false
+
+[mcp_servers.maas_p4]
+enabled = false
+
+[mcp_servers.maas_slack]
+enabled = false
+
+[sandbox_workspace_write]
+network_access = true

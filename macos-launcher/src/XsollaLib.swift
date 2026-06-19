@@ -244,10 +244,7 @@ struct XsollaUpdater {
   }
 
   func latestGameVersion() async throws -> Int {
-    return try await self.latestGameVersion(installedVersion: self.installedVersion())
-  }
-
-  private func latestGameVersion(installedVersion: Int) async throws -> Int {
+    let installedVersion = self.installedVersion()
     let url = URL(
       string: String(
         format:
@@ -276,7 +273,7 @@ struct XsollaUpdater {
   func checkForUpdateAvailable() async -> Bool {
     do {
       let installedVersion = self.installedVersion()
-      let latestGameVersion = try await self.latestGameVersion(installedVersion: installedVersion)
+      let latestGameVersion = try await self.latestGameVersion()
       let available = installedVersion < latestGameVersion
       logger.info(
         "Game update availability installed=\(installedVersion, privacy: .public) latest=\(latestGameVersion, privacy: .public) available=\(available, privacy: .public)")
@@ -496,7 +493,7 @@ struct XsollaUpdater {
       // last-use lifetime, which could otherwise release (and asynchronously delete) the
       // staging folder out from under these operations.
       try withExtendedLifetime(tempPath) {
-        // NOTE: copying into the live game directory is not atomic — staged files replace the
+        // NOTE: copying into the live game directory is not atomic - staged files replace the
         // installed ones one at a time, so a failure partway through leaves the install in a
         // mixed old/new state. Staging keeps all download/extract/patch work out of the live
         // directory until this point, and the version file is only written after this copy

@@ -23,6 +23,7 @@ namespace DCC  = DefaultConfig::Control;
 namespace DCU  = DefaultConfig::UI;
 namespace DCBS = DefaultConfig::Buffs;
 namespace DCS  = DefaultConfig::Sync;
+namespace DCCM = DefaultConfig::CombatModel;
 namespace DCSC = DefaultConfig::SystemConfig;
 namespace DCSH = DefaultConfig::Shortcuts;
 
@@ -647,6 +648,10 @@ void Config::Load()
   this->sync_logging = get_config_or_default(config, parsed, "sync", "logging", DCS::logging, write_config);
   this->sync_resolver_cache_ttl =
       get_config_or_default(config, parsed, "sync", "resolver_cache_ttl", DCS::resolver_cache_ttl, write_config);
+  this->combat_model_capture_enabled =
+      get_config_or_default(config, parsed, "combat_model", "capture_enabled", DCCM::capture_enabled, write_config);
+  this->combat_model_capture_dir =
+      get_config_or_default<std::string>(config, parsed, "combat_model", "capture_dir", DCCM::capture_dir, write_log);
 
   SyncConfig sync_defaults;
   sync_defaults.proxy      = get_config_or_default<std::string>(config, parsed, "sync", "proxy", DCS::proxy, write_log);

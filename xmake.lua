@@ -49,6 +49,7 @@ add_requires("simdutf", { system = false })
 
 -- includes("launcher")
 includes("mods")
+includes("tools/combat-model")
 
 -- add_repositories("local-repo build")
 add_repositories("stfc-community-mod-repo xmake-packages")
