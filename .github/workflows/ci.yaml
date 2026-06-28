@@ -12,6 +12,23 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  test-schema:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.x"
+
+      - name: Install dev dependencies
+        run: python3 -m pip install -r requirements-dev.txt
+
+      - name: Validate remote sync schema
+        run: PYTHONDONTWRITEBYTECODE=1 python3 -m unittest tests/test_remote_sync_schema.py -v
+
   build-win:
     runs-on: windows-2025-vs2026
     steps:

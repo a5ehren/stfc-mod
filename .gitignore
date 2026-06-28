@@ -17,6 +17,8 @@ debug.log
 /vsxmake*/
 .DS_Store
 /.localassets/*
+__pycache__/
+*.py[cod]
 
 # Generated Info.plist files (generated from templates)
 **/Info.plist
