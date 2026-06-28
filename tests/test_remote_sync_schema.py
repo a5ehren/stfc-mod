@@ -120,6 +120,17 @@ class RemoteSyncSchemaTests(unittest.TestCase):
 
         self.assert_rejected(document)
 
+    def test_empty_slot_params_are_accepted_for_all_supported_slot_types(self):
+        document = self.load_valid_fixture("slot.json")
+
+        for slot_type in (0, 2, 3, 4, 6, 7):
+            with self.subTest(slot_type=slot_type):
+                slot = self.find_record(document, "slot", slot_type=slot_type)
+                slot["params"] = {}
+
+        errors = list(self.validator.iter_errors(document))
+        self.assertEqual(errors, [], "\n".join(error.message for error in errors))
+
     def test_wrong_job_variant_field_for_job_type_is_rejected(self):
         document = self.load_valid_fixture("job.json")
         research_job = self.find_record(document, "job", job_type=3)

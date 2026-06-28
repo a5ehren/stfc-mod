@@ -190,6 +190,12 @@
       "type": "number",
       "minimum": 0
     },
+    "emptySlotParams": {
+      "description": "An empty slot-parameter object emitted when the game omitted the nested protobuf parameter message.",
+      "type": "object",
+      "maxProperties": 0,
+      "additionalProperties": false
+    },
     "playerProfile": {
       "description": "A player profile entry used to resolve a battle-log player name; the game may add profile fields.",
       "type": "object",
@@ -780,7 +786,7 @@
       "additionalProperties": false
     },
     "officerPresetSlotParams": {
-      "description": "Parameters for an officer preset slot.",
+      "description": "Parameters for an officer preset slot when the game included its nested protobuf parameter message.",
       "type": "object",
       "properties": {
         "name": {
@@ -807,7 +813,7 @@
       "additionalProperties": false
     },
     "fleetCommanderSlotParams": {
-      "description": "Parameters for a fleet commander slot.",
+      "description": "Parameters for a fleet commander slot when the game included its nested protobuf parameter message.",
       "type": "object",
       "properties": {
         "order": {
@@ -839,7 +845,7 @@
       "additionalProperties": false
     },
     "forbiddenTechSlotParams": {
-      "description": "Parameters for a forbidden-tech slot.",
+      "description": "Parameters for a forbidden-tech slot when the game included its nested protobuf parameter message.",
       "type": "object",
       "properties": {
         "owner_id": {
@@ -890,7 +896,7 @@
       "additionalProperties": false
     },
     "fleetPresetSlotParams": {
-      "description": "Parameters for a fleet preset slot, including its strict drydock setup entries.",
+      "description": "Parameters for a fleet preset slot, including its strict drydock setup entries, when the game included its nested protobuf parameter message.",
       "type": "object",
       "properties": {
         "name": {
@@ -948,8 +954,15 @@
           ]
         },
         "params": {
-          "description": "The consumable-specific parameters, possibly empty when the nested message was omitted.",
-          "$ref": "#/$defs/consumableSlotParams"
+          "description": "The consumable-specific parameters, or {} when the game omitted the nested protobuf parameter message.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/consumableSlotParams"
+            },
+            {
+              "$ref": "#/$defs/emptySlotParams"
+            }
+          ]
         }
       },
       "required": [
@@ -994,8 +1007,15 @@
           ]
         },
         "params": {
-          "description": "The required officer-preset parameters.",
-          "$ref": "#/$defs/officerPresetSlotParams"
+          "description": "The officer-preset parameters, or {} when the game omitted the nested protobuf parameter message.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/officerPresetSlotParams"
+            },
+            {
+              "$ref": "#/$defs/emptySlotParams"
+            }
+          ]
         }
       },
       "required": [
@@ -1040,8 +1060,15 @@
           ]
         },
         "params": {
-          "description": "The required fleet-commander parameters.",
-          "$ref": "#/$defs/fleetCommanderSlotParams"
+          "description": "The fleet-commander parameters, or {} when the game omitted the nested protobuf parameter message.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/fleetCommanderSlotParams"
+            },
+            {
+              "$ref": "#/$defs/emptySlotParams"
+            }
+          ]
         }
       },
       "required": [
@@ -1086,8 +1113,15 @@
           ]
         },
         "params": {
-          "description": "The selectable-skill parameters, possibly empty when the nested message was omitted.",
-          "$ref": "#/$defs/selectableSkillSlotParams"
+          "description": "The selectable-skill parameters, or {} when the game omitted the nested protobuf parameter message.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/selectableSkillSlotParams"
+            },
+            {
+              "$ref": "#/$defs/emptySlotParams"
+            }
+          ]
         }
       },
       "required": [
@@ -1132,8 +1166,15 @@
           ]
         },
         "params": {
-          "description": "The required forbidden-tech parameters.",
-          "$ref": "#/$defs/forbiddenTechSlotParams"
+          "description": "The forbidden-tech parameters, or {} when the game omitted the nested protobuf parameter message.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/forbiddenTechSlotParams"
+            },
+            {
+              "$ref": "#/$defs/emptySlotParams"
+            }
+          ]
         }
       },
       "required": [
@@ -1178,8 +1219,15 @@
           ]
         },
         "params": {
-          "description": "The required fleet-preset parameters and strict setup entries.",
-          "$ref": "#/$defs/fleetPresetSlotParams"
+          "description": "The fleet-preset parameters and strict setup entries, or {} when the game omitted the nested protobuf parameter message.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/fleetPresetSlotParams"
+            },
+            {
+              "$ref": "#/$defs/emptySlotParams"
+            }
+          ]
         }
       },
       "required": [
