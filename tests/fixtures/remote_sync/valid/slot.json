@@ -1,0 +1,87 @@
+[
+  {
+    "type": "slot",
+    "sid": 1,
+    "slot_type": 0,
+    "spec_id": 100,
+    "item_id": null,
+    "params": {
+      "expiry_time": null
+    }
+  },
+  {
+    "type": "slot",
+    "sid": 2,
+    "slot_type": 2,
+    "spec_id": 101,
+    "item_id": 2001,
+    "params": {
+      "name": "Bridge Crew",
+      "order": 1,
+      "officer_ids": [
+        101,
+        102
+      ]
+    }
+  },
+  {
+    "type": "slot",
+    "sid": 3,
+    "slot_type": 3,
+    "spec_id": 102,
+    "item_id": null,
+    "params": {
+      "order": 0
+    }
+  },
+  {
+    "type": "slot",
+    "sid": 4,
+    "slot_type": 4,
+    "spec_id": 103,
+    "item_id": 3001,
+    "params": {
+      "cooldown_expiration": null
+    }
+  },
+  {
+    "type": "slot",
+    "sid": 6,
+    "slot_type": 6,
+    "spec_id": 104,
+    "item_id": 4001,
+    "params": {
+      "owner_id": -77,
+      "tier": 2,
+      "level": 1
+    }
+  },
+  {
+    "type": "slot",
+    "sid": 7,
+    "slot_type": 7,
+    "spec_id": 105,
+    "item_id": 5001,
+    "params": {
+      "name": "Alpha Fleet",
+      "order": 2,
+      "setup": [
+        {
+          "drydock_id": 1,
+          "ship_id": 6001,
+          "officer_ids": [
+            101,
+            102
+          ]
+        },
+        {
+          "drydock_id": 2,
+          "ship_id": 6002,
+          "officer_ids": [
+            103
+          ]
+        }
+      ]
+    }
+  }
+]

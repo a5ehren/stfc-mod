@@ -1,0 +1,12 @@
+[
+  {
+    "type": "buff",
+    "bid": 7001,
+    "level": 3,
+    "expiry_time": 1760000000
+  },
+  {
+    "type": "expired_buff",
+    "bid": 7002
+  }
+]

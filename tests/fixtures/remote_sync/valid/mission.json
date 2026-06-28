@@ -1,0 +1,10 @@
+[
+  {
+    "type": "mission",
+    "mid": -6001
+  },
+  {
+    "type": "active_mission",
+    "mid": 6002
+  }
+]

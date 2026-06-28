@@ -1,0 +1,12 @@
+[
+  {
+    "type": "resource",
+    "rid": 3001,
+    "amount": 125000
+  },
+  {
+    "type": "module",
+    "bid": 1201,
+    "level": 8
+  }
+]

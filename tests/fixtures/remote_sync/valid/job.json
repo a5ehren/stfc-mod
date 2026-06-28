@@ -1,0 +1,47 @@
+[
+  {
+    "type": "job",
+    "job_type": 3,
+    "uuid": "job-research-001",
+    "start_time": 1760000100,
+    "duration": 3600,
+    "reduction": 120,
+    "rid": -3001,
+    "level": 7
+  },
+  {
+    "type": "job",
+    "job_type": 4,
+    "uuid": "job-construction-001",
+    "start_time": 1760000200,
+    "duration": 7200,
+    "reduction": 0,
+    "bid": 4001,
+    "level": 6
+  },
+  {
+    "type": "job",
+    "job_type": 11,
+    "uuid": "job-tier-up-001",
+    "start_time": 1760000300,
+    "duration": 86400,
+    "reduction": 600,
+    "psid": 5001,
+    "tier": 4
+  },
+  {
+    "type": "job",
+    "job_type": 12,
+    "uuid": "job-scrap-001",
+    "start_time": 1760000400,
+    "duration": 1800,
+    "reduction": 30,
+    "psid": 5002,
+    "hull_id": -5003,
+    "level": 2
+  },
+  {
+    "type": "completed_job",
+    "uuid": "job-completed-001"
+  }
+]

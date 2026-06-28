@@ -1,0 +1,16 @@
+[
+  {
+    "type": "ship",
+    "psid": -4101,
+    "level": 18,
+    "level_percentage": 0.875,
+    "tier": 5,
+    "hull_id": -4102,
+    "components": [
+      100,
+      101,
+      102,
+      103
+    ]
+  }
+]

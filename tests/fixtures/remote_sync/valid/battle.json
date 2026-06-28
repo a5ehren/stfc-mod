@@ -1,0 +1,40 @@
+[
+  {
+    "type": "battlelog",
+    "names": {
+      "player-1001": {
+        "name": "Captain Aster",
+        "alliance_id": -42,
+        "alliance_name": "The Explorers",
+        "alliance_tag": "EXP",
+        "profile_extra": {
+          "rank": "officer",
+          "home_sector": 7
+        }
+      }
+    },
+    "journal": {
+      "battle": {
+        "rounds": [
+          {
+            "attacker": {
+              "id": 1001,
+              "damage": 12345
+            },
+            "defender": {
+              "id": 2002,
+              "damage": 6789
+            }
+          }
+        ]
+      },
+      "server_metadata": {
+        "season": 12,
+        "flags": {
+          "simulated": false,
+          "source": "game-server"
+        }
+      }
+    }
+  }
+]
