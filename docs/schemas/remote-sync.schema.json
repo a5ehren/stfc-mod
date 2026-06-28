@@ -1,0 +1,1271 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/a5ehren/stfc-mod/dev/docs/schemas/remote-sync.schema.json",
+  "title": "STFC Community Mod Remote Sync Request Body",
+  "description": "A non-empty outbound request body containing one homogeneous batch of remote-sync records from a single record family and lifecycle grouping.",
+  "$comment": "Choose exactly one homogeneous batch branch. Every item in a batch must belong to the same record family; active, expired, and completed lifecycle records may share a batch only with the other lifecycle records in that same family.",
+  "type": "array",
+  "minItems": 1,
+  "oneOf": [
+    {
+      "description": "A non-empty batch of battle-log records.",
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/battlelogRecord"
+      }
+    },
+    {
+      "description": "A non-empty batch containing active or expired buff records only.",
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "oneOf": [
+          {
+            "$ref": "#/$defs/buffRecord"
+          },
+          {
+            "$ref": "#/$defs/expiredBuffRecord"
+          }
+        ]
+      }
+    },
+    {
+      "description": "A non-empty batch of starbase module records.",
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/moduleRecord"
+      }
+    },
+    {
+      "description": "A non-empty batch of Emerald Chain progression records.",
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/emeraldChainRecord"
+      }
+    },
+    {
+      "description": "A non-empty batch of inventory records.",
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/inventoryRecord"
+      }
+    },
+    {
+      "description": "A non-empty batch of active or completed job records only.",
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "oneOf": [
+          {
+            "$ref": "#/$defs/researchJobRecord"
+          },
+          {
+            "$ref": "#/$defs/starbaseConstructionJobRecord"
+          },
+          {
+            "$ref": "#/$defs/shipTierUpJobRecord"
+          },
+          {
+            "$ref": "#/$defs/shipScrapJobRecord"
+          },
+          {
+            "$ref": "#/$defs/completedJobRecord"
+          }
+        ]
+      }
+    },
+    {
+      "description": "A non-empty batch of completed or active mission records only.",
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "oneOf": [
+          {
+            "$ref": "#/$defs/missionRecord"
+          },
+          {
+            "$ref": "#/$defs/activeMissionRecord"
+          }
+        ]
+      }
+    },
+    {
+      "description": "A non-empty batch of officer records.",
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/officerRecord"
+      }
+    },
+    {
+      "description": "A non-empty batch of research records.",
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/researchRecord"
+      }
+    },
+    {
+      "description": "A non-empty batch of resource records.",
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/resourceRecord"
+      }
+    },
+    {
+      "description": "A non-empty batch of ship records.",
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/shipRecord"
+      }
+    },
+    {
+      "description": "A non-empty batch of records for one of the supported slot types.",
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/slotRecord"
+      }
+    },
+    {
+      "description": "A non-empty batch of forbidden-tech records.",
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/forbiddenTechRecord"
+      }
+    },
+    {
+      "description": "A non-empty batch of officer-trait records.",
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/traitRecord"
+      }
+    }
+  ],
+  "examples": [
+    [
+      {
+        "type": "resource",
+        "rid": 3001,
+        "amount": 125000
+      }
+    ],
+    [
+      {
+        "type": "job",
+        "job_type": 3,
+        "uuid": "job-research-001",
+        "start_time": 1760000100,
+        "duration": 3600,
+        "reduction": 120,
+        "rid": -3001,
+        "level": 7
+      },
+      {
+        "type": "completed_job",
+        "uuid": "job-completed-001"
+      }
+    ]
+  ],
+  "$defs": {
+    "signedInteger": {
+      "description": "An integer identifier or value whose producer representation is signed and has no schema-imposed range limit.",
+      "type": "integer"
+    },
+    "nonNegativeInteger": {
+      "description": "An integer value that the producer emits as zero or greater.",
+      "type": "integer",
+      "minimum": 0
+    },
+    "nonNegativeNumber": {
+      "description": "A numeric value that the producer emits as zero or greater, without an upper bound.",
+      "type": "number",
+      "minimum": 0
+    },
+    "playerProfile": {
+      "description": "A player profile entry used to resolve a battle-log player name; the game may add profile fields.",
+      "type": "object",
+      "properties": {
+        "name": {
+          "description": "The player display name.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name"
+      ],
+      "additionalProperties": true
+    },
+    "journal": {
+      "description": "Game-server-owned battle journal data, intentionally left open so nested server fields can pass through.",
+      "type": "object",
+      "additionalProperties": true
+    },
+    "battlelogRecord": {
+      "description": "A battle-log record containing locally resolved player names and an open game-server journal.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "description": "The fixed remote-sync record tag for a battle log.",
+          "const": "battlelog"
+        },
+        "names": {
+          "description": "A map from player IDs to profiles; each profile must contain a name and may contain extra fields.",
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/$defs/playerProfile"
+          }
+        },
+        "journal": {
+          "description": "The open game-server-owned journal for this battle.",
+          "$ref": "#/$defs/journal"
+        }
+      },
+      "required": [
+        "type",
+        "names",
+        "journal"
+      ],
+      "additionalProperties": false
+    },
+    "buffRecord": {
+      "description": "An active global buff and its current level and optional expiry timestamp.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "description": "The fixed remote-sync record tag for an active buff.",
+          "const": "buff"
+        },
+        "bid": {
+          "description": "The signed global buff identifier.",
+          "$ref": "#/$defs/signedInteger"
+        },
+        "level": {
+          "description": "The non-negative current buff level.",
+          "$ref": "#/$defs/nonNegativeInteger"
+        },
+        "expiry_time": {
+          "description": "The non-negative expiry timestamp, or null when the buff has no expiry.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/nonNegativeInteger"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "type",
+        "bid",
+        "level",
+        "expiry_time"
+      ],
+      "additionalProperties": false
+    },
+    "expiredBuffRecord": {
+      "description": "A lifecycle removal record for a global buff that is no longer active.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "description": "The fixed remote-sync record tag for an expired buff.",
+          "const": "expired_buff"
+        },
+        "bid": {
+          "description": "The signed identifier of the buff that expired.",
+          "$ref": "#/$defs/signedInteger"
+        }
+      },
+      "required": [
+        "type",
+        "bid"
+      ],
+      "additionalProperties": false
+    },
+    "moduleRecord": {
+      "description": "A starbase module identifier and its non-negative level.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "description": "The fixed remote-sync record tag for a module.",
+          "const": "module"
+        },
+        "bid": {
+          "description": "The signed starbase module identifier.",
+          "$ref": "#/$defs/signedInteger"
+        },
+        "level": {
+          "description": "The non-negative module level.",
+          "$ref": "#/$defs/nonNegativeInteger"
+        }
+      },
+      "required": [
+        "type",
+        "bid",
+        "level"
+      ],
+      "additionalProperties": false
+    },
+    "emeraldChainRecord": {
+      "description": "The current non-negative Emerald Chain progression level.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "description": "The fixed remote-sync record tag for Emerald Chain state.",
+          "const": "emerald_chain"
+        },
+        "level": {
+          "description": "The non-negative claimed Emerald Chain level.",
+          "$ref": "#/$defs/nonNegativeInteger"
+        }
+      },
+      "required": [
+        "type",
+        "level"
+      ],
+      "additionalProperties": false
+    },
+    "inventoryRecord": {
+      "description": "A count of one signed inventory reference grouped by its item type.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "description": "The fixed remote-sync record tag for inventory state.",
+          "const": "inventory"
+        },
+        "item_type": {
+          "description": "The signed or unsigned game item type value emitted by the producer.",
+          "type": "integer"
+        },
+        "refid": {
+          "description": "The signed reference identifier for the inventory item.",
+          "$ref": "#/$defs/signedInteger"
+        },
+        "count": {
+          "description": "The non-negative quantity currently held.",
+          "$ref": "#/$defs/nonNegativeInteger"
+        }
+      },
+      "required": [
+        "type",
+        "item_type",
+        "refid",
+        "count"
+      ],
+      "additionalProperties": false
+    },
+    "researchJobRecord": {
+      "description": "An active research job with its research identifier and target level.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "description": "The fixed remote-sync record tag for an active job.",
+          "const": "job"
+        },
+        "job_type": {
+          "description": "The fixed producer job type for research jobs.",
+          "const": 3
+        },
+        "uuid": {
+          "description": "The stable job UUID used to identify this active lifecycle record.",
+          "type": "string"
+        },
+        "start_time": {
+          "description": "The non-negative Unix start timestamp for the job.",
+          "$ref": "#/$defs/nonNegativeInteger"
+        },
+        "duration": {
+          "description": "The non-negative job duration in seconds.",
+          "$ref": "#/$defs/nonNegativeInteger"
+        },
+        "reduction": {
+          "description": "The non-negative duration reduction in seconds.",
+          "$ref": "#/$defs/nonNegativeInteger"
+        },
+        "rid": {
+          "description": "The signed research identifier targeted by the job.",
+          "$ref": "#/$defs/signedInteger"
+        },
+        "level": {
+          "description": "The non-negative research level targeted by the job.",
+          "$ref": "#/$defs/nonNegativeInteger"
+        }
+      },
+      "required": [
+        "type",
+        "job_type",
+        "uuid",
+        "start_time",
+        "duration",
+        "reduction",
+        "rid",
+        "level"
+      ],
+      "additionalProperties": false
+    },
+    "starbaseConstructionJobRecord": {
+      "description": "An active starbase construction job with its module identifier and target level.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "description": "The fixed remote-sync record tag for an active job.",
+          "const": "job"
+        },
+        "job_type": {
+          "description": "The fixed producer job type for starbase construction jobs.",
+          "const": 4
+        },
+        "uuid": {
+          "description": "The stable job UUID used to identify this active lifecycle record.",
+          "type": "string"
+        },
+        "start_time": {
+          "description": "The non-negative Unix start timestamp for the job.",
+          "$ref": "#/$defs/nonNegativeInteger"
+        },
+        "duration": {
+          "description": "The non-negative job duration in seconds.",
+          "$ref": "#/$defs/nonNegativeInteger"
+        },
+        "reduction": {
+          "description": "The non-negative duration reduction in seconds.",
+          "$ref": "#/$defs/nonNegativeInteger"
+        },
+        "bid": {
+          "description": "The signed starbase module identifier targeted by the job.",
+          "$ref": "#/$defs/signedInteger"
+        },
+        "level": {
+          "description": "The non-negative module level targeted by the job.",
+          "$ref": "#/$defs/nonNegativeInteger"
+        }
+      },
+      "required": [
+        "type",
+        "job_type",
+        "uuid",
+        "start_time",
+        "duration",
+        "reduction",
+        "bid",
+        "level"
+      ],
+      "additionalProperties": false
+    },
+    "shipTierUpJobRecord": {
+      "description": "An active ship tier-up job with its ship identifier and target tier.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "description": "The fixed remote-sync record tag for an active job.",
+          "const": "job"
+        },
+        "job_type": {
+          "description": "The fixed producer job type for ship tier-up jobs.",
+          "const": 11
+        },
+        "uuid": {
+          "description": "The stable job UUID used to identify this active lifecycle record.",
+          "type": "string"
+        },
+        "start_time": {
+          "description": "The non-negative Unix start timestamp for the job.",
+          "$ref": "#/$defs/nonNegativeInteger"
+        },
+        "duration": {
+          "description": "The non-negative job duration in seconds.",
+          "$ref": "#/$defs/nonNegativeInteger"
+        },
+        "reduction": {
+          "description": "The non-negative duration reduction in seconds.",
+          "$ref": "#/$defs/nonNegativeInteger"
+        },
+        "psid": {
+          "description": "The signed player-ship identifier targeted by the job.",
+          "$ref": "#/$defs/signedInteger"
+        },
+        "tier": {
+          "description": "The non-negative ship tier targeted by the job.",
+          "$ref": "#/$defs/nonNegativeInteger"
+        }
+      },
+      "required": [
+        "type",
+        "job_type",
+        "uuid",
+        "start_time",
+        "duration",
+        "reduction",
+        "psid",
+        "tier"
+      ],
+      "additionalProperties": false
+    },
+    "shipScrapJobRecord": {
+      "description": "An active ship scrap job with its ship, hull, and level values.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "description": "The fixed remote-sync record tag for an active job.",
+          "const": "job"
+        },
+        "job_type": {
+          "description": "The fixed producer job type for ship scrap jobs.",
+          "const": 12
+        },
+        "uuid": {
+          "description": "The stable job UUID used to identify this active lifecycle record.",
+          "type": "string"
+        },
+        "start_time": {
+          "description": "The non-negative Unix start timestamp for the job.",
+          "$ref": "#/$defs/nonNegativeInteger"
+        },
+        "duration": {
+          "description": "The non-negative job duration in seconds.",
+          "$ref": "#/$defs/nonNegativeInteger"
+        },
+        "reduction": {
+          "description": "The non-negative duration reduction in seconds.",
+          "$ref": "#/$defs/nonNegativeInteger"
+        },
+        "psid": {
+          "description": "The signed player-ship identifier being scrapped.",
+          "$ref": "#/$defs/signedInteger"
+        },
+        "hull_id": {
+          "description": "The signed hull identifier for the ship being scrapped.",
+          "$ref": "#/$defs/signedInteger"
+        },
+        "level": {
+          "description": "The non-negative ship level associated with the scrap job.",
+          "$ref": "#/$defs/nonNegativeInteger"
+        }
+      },
+      "required": [
+        "type",
+        "job_type",
+        "uuid",
+        "start_time",
+        "duration",
+        "reduction",
+        "psid",
+        "hull_id",
+        "level"
+      ],
+      "additionalProperties": false
+    },
+    "completedJobRecord": {
+      "description": "A lifecycle record stating that an earlier active job has completed.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "description": "The fixed remote-sync record tag for a completed job.",
+          "const": "completed_job"
+        },
+        "uuid": {
+          "description": "The stable UUID of the job that completed.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "type",
+        "uuid"
+      ],
+      "additionalProperties": false
+    },
+    "missionRecord": {
+      "description": "A completed or known mission record identified by its signed mission ID.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "description": "The fixed remote-sync record tag for a mission.",
+          "const": "mission"
+        },
+        "mid": {
+          "description": "The signed mission identifier.",
+          "$ref": "#/$defs/signedInteger"
+        }
+      },
+      "required": [
+        "type",
+        "mid"
+      ],
+      "additionalProperties": false
+    },
+    "activeMissionRecord": {
+      "description": "An active mission lifecycle record identified by its signed mission ID.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "description": "The fixed remote-sync record tag for an active mission.",
+          "const": "active_mission"
+        },
+        "mid": {
+          "description": "The signed active mission identifier.",
+          "$ref": "#/$defs/signedInteger"
+        }
+      },
+      "required": [
+        "type",
+        "mid"
+      ],
+      "additionalProperties": false
+    },
+    "officerRecord": {
+      "description": "An officer's non-negative rank, level, and shard count.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "description": "The fixed remote-sync record tag for an officer.",
+          "const": "officer"
+        },
+        "oid": {
+          "description": "The signed officer identifier.",
+          "$ref": "#/$defs/signedInteger"
+        },
+        "rank": {
+          "description": "The non-negative officer rank index.",
+          "$ref": "#/$defs/nonNegativeInteger"
+        },
+        "level": {
+          "description": "The non-negative officer level.",
+          "$ref": "#/$defs/nonNegativeInteger"
+        },
+        "shard_count": {
+          "description": "The non-negative number of officer shards.",
+          "$ref": "#/$defs/nonNegativeInteger"
+        }
+      },
+      "required": [
+        "type",
+        "oid",
+        "rank",
+        "level",
+        "shard_count"
+      ],
+      "additionalProperties": false
+    },
+    "researchRecord": {
+      "description": "A research identifier and its non-negative current level.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "description": "The fixed remote-sync record tag for research state.",
+          "const": "research"
+        },
+        "rid": {
+          "description": "The signed research identifier.",
+          "$ref": "#/$defs/signedInteger"
+        },
+        "level": {
+          "description": "The non-negative current research level.",
+          "$ref": "#/$defs/nonNegativeInteger"
+        }
+      },
+      "required": [
+        "type",
+        "rid",
+        "level"
+      ],
+      "additionalProperties": false
+    },
+    "resourceRecord": {
+      "description": "A resource identifier and its non-negative current amount.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "description": "The fixed remote-sync record tag for resource state.",
+          "const": "resource"
+        },
+        "rid": {
+          "description": "The signed resource identifier.",
+          "$ref": "#/$defs/signedInteger"
+        },
+        "amount": {
+          "description": "The non-negative current resource amount.",
+          "$ref": "#/$defs/nonNegativeInteger"
+        }
+      },
+      "required": [
+        "type",
+        "rid",
+        "amount"
+      ],
+      "additionalProperties": false
+    },
+    "shipRecord": {
+      "description": "A player ship's signed identifiers, non-negative progression values, level percentage, and components.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "description": "The fixed remote-sync record tag for ship state.",
+          "const": "ship"
+        },
+        "psid": {
+          "description": "The signed player-ship identifier.",
+          "$ref": "#/$defs/signedInteger"
+        },
+        "level": {
+          "description": "The non-negative ship level.",
+          "$ref": "#/$defs/nonNegativeInteger"
+        },
+        "level_percentage": {
+          "description": "The non-negative progress percentage value emitted by the producer; no upper bound is imposed because its unit is not established.",
+          "$ref": "#/$defs/nonNegativeNumber"
+        },
+        "tier": {
+          "description": "The non-negative ship tier.",
+          "$ref": "#/$defs/nonNegativeInteger"
+        },
+        "hull_id": {
+          "description": "The signed hull identifier.",
+          "$ref": "#/$defs/signedInteger"
+        },
+        "components": {
+          "description": "The ordered array of signed component identifiers installed on the ship.",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/signedInteger"
+          }
+        }
+      },
+      "required": [
+        "type",
+        "psid",
+        "level",
+        "level_percentage",
+        "tier",
+        "hull_id",
+        "components"
+      ],
+      "additionalProperties": false
+    },
+    "consumableSlotParams": {
+      "description": "Parameters for a consumable slot; the nested protobuf message may be omitted, producing an empty object.",
+      "type": "object",
+      "properties": {
+        "expiry_time": {
+          "description": "The non-negative consumable expiry timestamp, or null when no expiry is present.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/nonNegativeInteger"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "officerPresetSlotParams": {
+      "description": "Parameters for an officer preset slot.",
+      "type": "object",
+      "properties": {
+        "name": {
+          "description": "The officer preset display name.",
+          "type": "string"
+        },
+        "order": {
+          "description": "The non-negative display order of the officer preset.",
+          "$ref": "#/$defs/nonNegativeInteger"
+        },
+        "officer_ids": {
+          "description": "The ordered array of signed officer identifiers in the preset.",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/signedInteger"
+          }
+        }
+      },
+      "required": [
+        "name",
+        "order",
+        "officer_ids"
+      ],
+      "additionalProperties": false
+    },
+    "fleetCommanderSlotParams": {
+      "description": "Parameters for a fleet commander slot.",
+      "type": "object",
+      "properties": {
+        "order": {
+          "description": "The non-negative display order of the fleet commander slot.",
+          "$ref": "#/$defs/nonNegativeInteger"
+        }
+      },
+      "required": [
+        "order"
+      ],
+      "additionalProperties": false
+    },
+    "selectableSkillSlotParams": {
+      "description": "Parameters for a selectable skill slot; the nested protobuf message may be omitted, producing an empty object.",
+      "type": "object",
+      "properties": {
+        "cooldown_expiration": {
+          "description": "The non-negative skill cooldown expiration timestamp, or null when no cooldown is present.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/nonNegativeInteger"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "forbiddenTechSlotParams": {
+      "description": "Parameters for a forbidden-tech slot.",
+      "type": "object",
+      "properties": {
+        "owner_id": {
+          "description": "The signed owner identifier associated with the forbidden technology.",
+          "$ref": "#/$defs/signedInteger"
+        },
+        "tier": {
+          "description": "The non-negative forbidden-technology tier.",
+          "$ref": "#/$defs/nonNegativeInteger"
+        },
+        "level": {
+          "description": "The non-negative forbidden-technology level.",
+          "$ref": "#/$defs/nonNegativeInteger"
+        }
+      },
+      "required": [
+        "owner_id",
+        "tier",
+        "level"
+      ],
+      "additionalProperties": false
+    },
+    "fleetPresetSetup": {
+      "description": "One strict fleet-preset setup entry containing a drydock, ship, and officer list.",
+      "type": "object",
+      "properties": {
+        "drydock_id": {
+          "description": "The signed drydock identifier.",
+          "$ref": "#/$defs/signedInteger"
+        },
+        "ship_id": {
+          "description": "The signed ship identifier assigned to the drydock.",
+          "$ref": "#/$defs/signedInteger"
+        },
+        "officer_ids": {
+          "description": "The ordered array of signed officer identifiers assigned to the ship.",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/signedInteger"
+          }
+        }
+      },
+      "required": [
+        "drydock_id",
+        "ship_id",
+        "officer_ids"
+      ],
+      "additionalProperties": false
+    },
+    "fleetPresetSlotParams": {
+      "description": "Parameters for a fleet preset slot, including its strict drydock setup entries.",
+      "type": "object",
+      "properties": {
+        "name": {
+          "description": "The fleet preset display name.",
+          "type": "string"
+        },
+        "order": {
+          "description": "The non-negative display order of the fleet preset.",
+          "$ref": "#/$defs/nonNegativeInteger"
+        },
+        "setup": {
+          "description": "The ordered fleet preset drydock setups.",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/fleetPresetSetup"
+          }
+        }
+      },
+      "required": [
+        "name",
+        "order",
+        "setup"
+      ],
+      "additionalProperties": false
+    },
+    "consumableSlotRecord": {
+      "description": "A complete consumable slot record with slot type 0.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "description": "The fixed remote-sync record tag for a slot.",
+          "const": "slot"
+        },
+        "sid": {
+          "description": "The signed slot identifier.",
+          "$ref": "#/$defs/signedInteger"
+        },
+        "slot_type": {
+          "description": "The fixed producer slot type for consumable slots.",
+          "const": 0
+        },
+        "spec_id": {
+          "description": "The signed slot specification identifier.",
+          "$ref": "#/$defs/signedInteger"
+        },
+        "item_id": {
+          "description": "The signed slot item identifier, or null when no item is assigned.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/signedInteger"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "params": {
+          "description": "The consumable-specific parameters, possibly empty when the nested message was omitted.",
+          "$ref": "#/$defs/consumableSlotParams"
+        }
+      },
+      "required": [
+        "type",
+        "sid",
+        "slot_type",
+        "spec_id",
+        "item_id",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    "officerPresetSlotRecord": {
+      "description": "A complete officer-preset slot record with slot type 2.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "description": "The fixed remote-sync record tag for a slot.",
+          "const": "slot"
+        },
+        "sid": {
+          "description": "The signed slot identifier.",
+          "$ref": "#/$defs/signedInteger"
+        },
+        "slot_type": {
+          "description": "The fixed producer slot type for officer preset slots.",
+          "const": 2
+        },
+        "spec_id": {
+          "description": "The signed slot specification identifier.",
+          "$ref": "#/$defs/signedInteger"
+        },
+        "item_id": {
+          "description": "The signed slot item identifier, or null when no item is assigned.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/signedInteger"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "params": {
+          "description": "The required officer-preset parameters.",
+          "$ref": "#/$defs/officerPresetSlotParams"
+        }
+      },
+      "required": [
+        "type",
+        "sid",
+        "slot_type",
+        "spec_id",
+        "item_id",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    "fleetCommanderSlotRecord": {
+      "description": "A complete fleet-commander slot record with slot type 3.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "description": "The fixed remote-sync record tag for a slot.",
+          "const": "slot"
+        },
+        "sid": {
+          "description": "The signed slot identifier.",
+          "$ref": "#/$defs/signedInteger"
+        },
+        "slot_type": {
+          "description": "The fixed producer slot type for fleet commander slots.",
+          "const": 3
+        },
+        "spec_id": {
+          "description": "The signed slot specification identifier.",
+          "$ref": "#/$defs/signedInteger"
+        },
+        "item_id": {
+          "description": "The signed slot item identifier, or null when no item is assigned.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/signedInteger"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "params": {
+          "description": "The required fleet-commander parameters.",
+          "$ref": "#/$defs/fleetCommanderSlotParams"
+        }
+      },
+      "required": [
+        "type",
+        "sid",
+        "slot_type",
+        "spec_id",
+        "item_id",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    "selectableSkillSlotRecord": {
+      "description": "A complete selectable-skill slot record with slot type 4.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "description": "The fixed remote-sync record tag for a slot.",
+          "const": "slot"
+        },
+        "sid": {
+          "description": "The signed slot identifier.",
+          "$ref": "#/$defs/signedInteger"
+        },
+        "slot_type": {
+          "description": "The fixed producer slot type for selectable skill slots.",
+          "const": 4
+        },
+        "spec_id": {
+          "description": "The signed slot specification identifier.",
+          "$ref": "#/$defs/signedInteger"
+        },
+        "item_id": {
+          "description": "The signed slot item identifier, or null when no item is assigned.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/signedInteger"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "params": {
+          "description": "The selectable-skill parameters, possibly empty when the nested message was omitted.",
+          "$ref": "#/$defs/selectableSkillSlotParams"
+        }
+      },
+      "required": [
+        "type",
+        "sid",
+        "slot_type",
+        "spec_id",
+        "item_id",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    "forbiddenTechSlotRecord": {
+      "description": "A complete forbidden-tech slot record with slot type 6.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "description": "The fixed remote-sync record tag for a slot.",
+          "const": "slot"
+        },
+        "sid": {
+          "description": "The signed slot identifier.",
+          "$ref": "#/$defs/signedInteger"
+        },
+        "slot_type": {
+          "description": "The fixed producer slot type for forbidden-tech slots.",
+          "const": 6
+        },
+        "spec_id": {
+          "description": "The signed slot specification identifier.",
+          "$ref": "#/$defs/signedInteger"
+        },
+        "item_id": {
+          "description": "The signed slot item identifier, or null when no item is assigned.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/signedInteger"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "params": {
+          "description": "The required forbidden-tech parameters.",
+          "$ref": "#/$defs/forbiddenTechSlotParams"
+        }
+      },
+      "required": [
+        "type",
+        "sid",
+        "slot_type",
+        "spec_id",
+        "item_id",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    "fleetPresetSlotRecord": {
+      "description": "A complete fleet-preset slot record with slot type 7.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "description": "The fixed remote-sync record tag for a slot.",
+          "const": "slot"
+        },
+        "sid": {
+          "description": "The signed slot identifier.",
+          "$ref": "#/$defs/signedInteger"
+        },
+        "slot_type": {
+          "description": "The fixed producer slot type for fleet preset slots.",
+          "const": 7
+        },
+        "spec_id": {
+          "description": "The signed slot specification identifier.",
+          "$ref": "#/$defs/signedInteger"
+        },
+        "item_id": {
+          "description": "The signed slot item identifier, or null when no item is assigned.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/signedInteger"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "params": {
+          "description": "The required fleet-preset parameters and strict setup entries.",
+          "$ref": "#/$defs/fleetPresetSlotParams"
+        }
+      },
+      "required": [
+        "type",
+        "sid",
+        "slot_type",
+        "spec_id",
+        "item_id",
+        "params"
+      ],
+      "additionalProperties": false
+    },
+    "slotRecord": {
+      "description": "A slot record constrained to one of the six supported producer slot types and matching parameter shapes.",
+      "oneOf": [
+        {
+          "$ref": "#/$defs/consumableSlotRecord"
+        },
+        {
+          "$ref": "#/$defs/officerPresetSlotRecord"
+        },
+        {
+          "$ref": "#/$defs/fleetCommanderSlotRecord"
+        },
+        {
+          "$ref": "#/$defs/selectableSkillSlotRecord"
+        },
+        {
+          "$ref": "#/$defs/forbiddenTechSlotRecord"
+        },
+        {
+          "$ref": "#/$defs/fleetPresetSlotRecord"
+        }
+      ]
+    },
+    "forbiddenTechRecord": {
+      "description": "A forbidden-tech identifier and its non-negative tier, level, and shard count.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "description": "The fixed remote-sync record tag for forbidden technology.",
+          "const": "ft"
+        },
+        "fid": {
+          "description": "The signed forbidden-tech identifier.",
+          "$ref": "#/$defs/signedInteger"
+        },
+        "tier": {
+          "description": "The non-negative forbidden-tech tier.",
+          "$ref": "#/$defs/nonNegativeInteger"
+        },
+        "level": {
+          "description": "The non-negative forbidden-tech level.",
+          "$ref": "#/$defs/nonNegativeInteger"
+        },
+        "shard_count": {
+          "description": "The non-negative number of forbidden-tech shards.",
+          "$ref": "#/$defs/nonNegativeInteger"
+        }
+      },
+      "required": [
+        "type",
+        "fid",
+        "tier",
+        "level",
+        "shard_count"
+      ],
+      "additionalProperties": false
+    },
+    "traitRecord": {
+      "description": "An officer trait identifier and its non-negative level.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "description": "The fixed remote-sync record tag for an officer trait.",
+          "const": "trait"
+        },
+        "oid": {
+          "description": "The signed officer identifier owning the trait.",
+          "$ref": "#/$defs/signedInteger"
+        },
+        "tid": {
+          "description": "The signed trait identifier.",
+          "$ref": "#/$defs/signedInteger"
+        },
+        "level": {
+          "description": "The non-negative active trait level.",
+          "$ref": "#/$defs/nonNegativeInteger"
+        }
+      },
+      "required": [
+        "type",
+        "oid",
+        "tid",
+        "level"
+      ],
+      "additionalProperties": false
+    }
+  }
+}
