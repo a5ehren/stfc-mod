@@ -29,6 +29,9 @@ jobs:
       - name: Validate remote sync schema
         run: PYTHONDONTWRITEBYTECODE=1 python3 -m unittest tests/test_remote_sync_schema.py -v
 
+      - name: Validate schema JSON syntax
+        run: python3 -m json.tool docs/schemas/remote-sync.schema.json >/dev/null
+
   build-win:
     runs-on: windows-2025-vs2026
     steps:

@@ -316,7 +316,7 @@
       "additionalProperties": false
     },
     "emeraldChainRecord": {
-      "description": "The current non-negative Emerald Chain progression level.",
+      "description": "The current Emerald Chain progression level; -1 is the unknown or empty-claims sentinel.",
       "type": "object",
       "properties": {
         "type": {
@@ -324,8 +324,8 @@
           "const": "emerald_chain"
         },
         "level": {
-          "description": "The non-negative claimed Emerald Chain level.",
-          "$ref": "#/$defs/nonNegativeInteger"
+          "description": "The signed claimed Emerald Chain level; -1 indicates that no loyalty tiers are claimed or the level is unknown.",
+          "$ref": "#/$defs/signedInteger"
         }
       },
       "required": [
