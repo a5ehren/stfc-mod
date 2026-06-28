@@ -196,6 +196,10 @@
       "maxProperties": 0,
       "additionalProperties": false
     },
+    "absentSlotParams": {
+      "description": "A null slot-parameter value emitted when the game omitted the nested protobuf parameter message.",
+      "type": "null"
+    },
     "playerProfile": {
       "description": "A player profile entry used to resolve a battle-log player name; the game may add profile fields.",
       "type": "object",
@@ -954,13 +958,16 @@
           ]
         },
         "params": {
-          "description": "The consumable-specific parameters, or {} when the game omitted the nested protobuf parameter message.",
+          "description": "The consumable-specific parameters, or {} or null when the game omitted the nested protobuf parameter message.",
           "anyOf": [
             {
               "$ref": "#/$defs/consumableSlotParams"
             },
             {
               "$ref": "#/$defs/emptySlotParams"
+            },
+            {
+              "$ref": "#/$defs/absentSlotParams"
             }
           ]
         }
@@ -1007,13 +1014,16 @@
           ]
         },
         "params": {
-          "description": "The officer-preset parameters, or {} when the game omitted the nested protobuf parameter message.",
+          "description": "The officer-preset parameters, or {} or null when the game omitted the nested protobuf parameter message.",
           "anyOf": [
             {
               "$ref": "#/$defs/officerPresetSlotParams"
             },
             {
               "$ref": "#/$defs/emptySlotParams"
+            },
+            {
+              "$ref": "#/$defs/absentSlotParams"
             }
           ]
         }
@@ -1060,13 +1070,16 @@
           ]
         },
         "params": {
-          "description": "The fleet-commander parameters, or {} when the game omitted the nested protobuf parameter message.",
+          "description": "The fleet-commander parameters, or {} or null when the game omitted the nested protobuf parameter message.",
           "anyOf": [
             {
               "$ref": "#/$defs/fleetCommanderSlotParams"
             },
             {
               "$ref": "#/$defs/emptySlotParams"
+            },
+            {
+              "$ref": "#/$defs/absentSlotParams"
             }
           ]
         }
@@ -1113,13 +1126,16 @@
           ]
         },
         "params": {
-          "description": "The selectable-skill parameters, or {} when the game omitted the nested protobuf parameter message.",
+          "description": "The selectable-skill parameters, or {} or null when the game omitted the nested protobuf parameter message.",
           "anyOf": [
             {
               "$ref": "#/$defs/selectableSkillSlotParams"
             },
             {
               "$ref": "#/$defs/emptySlotParams"
+            },
+            {
+              "$ref": "#/$defs/absentSlotParams"
             }
           ]
         }
@@ -1166,13 +1182,16 @@
           ]
         },
         "params": {
-          "description": "The forbidden-tech parameters, or {} when the game omitted the nested protobuf parameter message.",
+          "description": "The forbidden-tech parameters, or {} or null when the game omitted the nested protobuf parameter message.",
           "anyOf": [
             {
               "$ref": "#/$defs/forbiddenTechSlotParams"
             },
             {
               "$ref": "#/$defs/emptySlotParams"
+            },
+            {
+              "$ref": "#/$defs/absentSlotParams"
             }
           ]
         }
@@ -1219,13 +1238,16 @@
           ]
         },
         "params": {
-          "description": "The fleet-preset parameters and strict setup entries, or {} when the game omitted the nested protobuf parameter message.",
+          "description": "The fleet-preset parameters and strict setup entries, or {} or null when the game omitted the nested protobuf parameter message.",
           "anyOf": [
             {
               "$ref": "#/$defs/fleetPresetSlotParams"
             },
             {
               "$ref": "#/$defs/emptySlotParams"
+            },
+            {
+              "$ref": "#/$defs/absentSlotParams"
             }
           ]
         }
